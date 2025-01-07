@@ -1,8 +1,7 @@
-import { ComponentMetadata } from '@/components/component'
-import { I18nDescription } from '@/core/common-types'
+import { ComponentMetadata, FeatureBase } from '@/components/component'
 import { deleteValue } from '@/core/utils'
-import { CoreApis } from '../core/core-apis'
-import { addData, registerData, registerAndGetData } from './data'
+import { CoreApis } from '@/core/core-apis'
+import { addData, registerAndGetData, registerData } from './data'
 import { addHook, getHook } from './hook'
 
 /** 插件初始化时的传入参数, 可以解构并调用 */
@@ -16,16 +15,15 @@ export interface PluginSetupParameters {
 }
 
 /** 插件基本信息 */
-export interface PluginMinimalData {
+export interface PluginMinimalData extends FeatureBase {
   /** 初始化函数, 可在其中注册数据, 添加代码注入等 */
   setup: (params: PluginSetupParameters) => void | Promise<void>
   /** 插件名称 */
   name: string
   /** 显示名称, 默认同插件名称 */
   displayName?: string
-  /** 插件描述, 类型同 `ComponentMetadata.description` */
-  description?: I18nDescription
 }
+
 type PartialRequired<Target, Props extends keyof Target> = Target & {
   [P in Props]-?: Target[P]
 }
@@ -36,28 +34,32 @@ export const pluginsMap: { [name: string]: PluginMetadata } = {}
 const getBuiltInPlugins = lodash.once(() => {
   const context = require.context('@/plugins', true, /index\.ts$/)
   const pluginPaths = context.keys()
-  return pluginPaths.map(path => {
-    const m = context(path)
-    if ('plugin' in m) {
-      const plugin = m.plugin as PluginMetadata
-      pluginsMap[plugin.name] = plugin
-      return plugin
-    }
-    return undefined
-  }).filter(it => it !== undefined) as PluginMetadata[]
+  return pluginPaths
+    .map(path => {
+      const m = context(path)
+      if ('plugin' in m) {
+        const plugin = m.plugin as PluginMetadata
+        pluginsMap[plugin.name] = plugin
+        return plugin
+      }
+      return undefined
+    })
+    .filter(it => it !== undefined) as PluginMetadata[]
 })
 /** 包含所有插件的数组 */
 export const plugins: PluginMetadata[] = getBuiltInPlugins()
 
 /**
  * 安装插件
- * @param input 插件数据
+ * @param code 插件代码
  */
 export const installPlugin = async (code: string) => {
-  const { parseExternalInput } = await import('../core/external-input')
-  const plugin = await parseExternalInput<PluginMetadata>(code)
-  if (plugin === null) {
-    throw new Error('无效的插件代码')
+  const { loadFeatureCode } = await import('@/core/external-input')
+  let plugin: PluginMetadata
+  try {
+    plugin = loadFeatureCode(code) as PluginMetadata
+  } catch (e) {
+    throw new Error('无效的插件代码', e)
   }
   const { settings } = await import('@/core/settings')
   const existingPlugin = settings.userPlugins[plugin.name]
@@ -98,13 +100,9 @@ export const installPlugin = async (code: string) => {
  */
 export const uninstallPlugin = async (nameOrDisplayName: string) => {
   const { settings } = await import('@/core/settings')
-  const existingPlugin = Object.entries(settings.userPlugins)
-    .find(([name, { displayName }]) => {
-      if (name === nameOrDisplayName || displayName === nameOrDisplayName) {
-        return true
-      }
-      return false
-    })
+  const existingPlugin = Object.entries(settings.userPlugins).find(
+    ([name, { displayName }]) => name === nameOrDisplayName || displayName === nameOrDisplayName,
+  )
   if (!existingPlugin) {
     throw new Error(`没有找到与名称'${nameOrDisplayName}'相关联的插件`)
   }
@@ -159,17 +157,28 @@ export const loadPlugin = async (plugin: PluginMetadata) => {
  */
 export const loadAllPlugins = async (components: ComponentMetadata[]) => {
   const { settings, getGeneralSettings } = await import('@/core/settings')
-  const { batchParseCode } = await import('@/core/external-input')
-  const otherPlugins = components
-    .map(extractPluginFromComponent)
-    .filter(p => p !== null)
-    .concat(await batchParseCode<PluginMetadata>(
-      Object.values(settings.userPlugins).map(p => p.code),
-    ))
-  plugins.push(...otherPlugins)
-  return Promise.allSettled(
-    plugins.map(loadPlugin),
-  ).then(async () => {
+  const { loadFeatureCode } = await import('@/core/external-input/load-feature-code')
+  for (const component of components) {
+    const plugin = extractPluginFromComponent(component)
+    if (plugin) {
+      plugins.push(plugin)
+    }
+  }
+  for (const [name, setting] of Object.entries(settings.userPlugins)) {
+    const { code } = setting
+    let metadata: PluginMetadata
+    try {
+      metadata = loadFeatureCode(code) as PluginMetadata
+    } catch (e) {
+      console.error('从代码加载用户插件失败。代码可能包含语法错误或执行时产生了异常', {
+        pluginName: name,
+        error: e,
+      })
+      continue
+    }
+    plugins.push(metadata)
+  }
+  return Promise.allSettled(plugins.map(loadPlugin)).then(async () => {
     if (getGeneralSettings().devMode) {
       const { pluginLoadTime, pluginResolveTime } = await import('@/core/performance/plugin-trace')
       const { logStats } = await import('@/core/performance/stats')

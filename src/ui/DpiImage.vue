@@ -1,5 +1,6 @@
 <template>
   <img
+    v-bind="$attrs"
     :width="width"
     :height="height"
     :srcset="srcset"
@@ -43,11 +44,17 @@ export default Vue.extend({
       if (typeof this.size === 'object' && 'width' in this.size) {
         return this.size.width
       }
+      if (typeof this.size === 'number') {
+        return this.size
+      }
       return null
     },
     height() {
       if (typeof this.size === 'object' && 'height' in this.size) {
         return this.size.height
+      }
+      if (typeof this.size === 'number') {
+        return this.size
       }
       return null
     },
@@ -90,7 +97,8 @@ export default Vue.extend({
       if (isSourceInvalid) {
         this.srcset = null
         if (this.placeholderImage) {
-          this.actualSrc = 'https://s1.hdslb.com/bfs/static/blive/live-web-center/static/img/no-cover.1ebe4d5.jpg'
+          this.actualSrc =
+            'https://s1.hdslb.com/bfs/static/blive/live-web-center/static/img/no-cover.1ebe4d5.jpg'
         } else {
           this.actualSrc = EmptyImageUrl
         }

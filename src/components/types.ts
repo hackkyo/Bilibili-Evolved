@@ -1,9 +1,4 @@
-import {
-  TestPattern,
-  Executable,
-  VueModule,
-  I18nDescription,
-} from '@/core/common-types'
+import { TestPattern, Executable, VueModule, I18nDescription } from '@/core/common-types'
 import { ComponentSettings } from '@/core/settings'
 import { CoreApis } from '@/core/core-apis'
 import { PluginMinimalData } from '@/plugins/plugin'
@@ -11,13 +6,27 @@ import { Range } from '@/ui/range'
 import { Widget } from '@/components/widget'
 import { LanguagePack } from './i18n/types'
 
-type Author = {
+export type Author = {
   name: string
   link: string
 }
+
+export interface FeatureBase {
+  // TODO: 可在编译时转换 Markdown 以提高运行时性能
+  /** 描述 (支持 markdown), 可以设置为对象提供多语言的描述 (`key: 语言代码`) */
+  description?: I18nDescription
+  /** 作者信息 */
+  author?: Author | Author[]
+  /** 编译时的 commit hash, 由 Babel 注入, 不需要手动填写 */
+  commitHash?: string
+  /** 编译时的 core version, 由 Babel 注入, 不需要手动填写 */
+  coreVersion?: string
+}
+
 type Optional<Target, Props extends keyof Target> = {
   [P in Props]?: Target[P]
 } & Omit<Target, Props>
+
 /** 组件标签 */
 export interface ComponentTag {
   /** 标签的名称 */
@@ -31,39 +40,45 @@ export interface ComponentTag {
   /** 设置面板中的呈现顺序 */
   order: number
 }
-type ComponentOptionValidator<T> = (value: T) => T | undefined | null
-/** 组件选项信息
- * @todo 需要 extends 出更具体的 Option 类型, 现在这样混一起太乱
- */
-export interface ComponentOption {
+
+type ComponentOptionValidator<T> = (value: T, oldValue: T) => T | undefined | null
+
+export type UnknownOptions = Record<string, unknown>
+
+export type EmptyOptions = Record<string, never>
+
+/** 单个选项的信息 */
+export interface OptionMetadata<V = unknown> {
   /** 默认值 */
-  defaultValue: any
+  defaultValue: V
   /** 显示名称 */
-  displayName: string
-  /** 如果希望这个选项显示为一个下拉框, 可以用相应的`enum`提供下拉框的选值, 或者也可以传入`string[]` */
-  dropdownEnum?: any
+  displayName?: string
+  /** 如果希望这个选项显示为一个下拉框, 可以用相应的 `enum` 提供下拉框的选值, 或者也可以传入 `string[]` */
+  dropdownEnum?: unknown
   /** 是否不显示在设置面板中(不自动生成选项UI) */
   hidden?: boolean
-  /** 设为`true`时, 将用颜色选取器替代文本框 */
+  /** 设为 `true` 时, 将用颜色选取器替代文本框 */
   color?: boolean
-  /** 设为`true`时, 表示选项为多个`boolean`开关, 将显示为选择框列表 */
-  switches?: boolean
+  /** 设为 `true` 时, 使用多行文本框 */
+  multiline?: boolean
   /** 设置范围, 可以显示为一个滑动条 */
   slider?: {
     min?: number
     max?: number
     step?: number
   }
-  // /** 与`switches`选项配合使用, 设为`true`时, 用<RadioButton>替代<CheckBox>进行单选限制 */
-  // radio?: boolean
-  /** `number`, `string`或`Range`类型的选项, 可以添加验证函数来阻止非法输入 */
-  validator?: ComponentOptionValidator<Range<string>> |
-  ComponentOptionValidator<string> | ComponentOptionValidator<number>
+  /** `number`, `string` 或 `Range` 类型的选项, 可以添加验证函数来阻止非法输入 */
+  validator?:
+    | ComponentOptionValidator<Range<string>>
+    | ComponentOptionValidator<string>
+    | ComponentOptionValidator<number>
 }
-/** 组件选项信息 */
-export interface ComponentOptions {
-  [key: string]: ComponentOption
+
+/** 多个选项的信息 */
+export type OptionsMetadata<O extends UnknownOptions = UnknownOptions> = {
+  [OptionName in keyof O]: OptionMetadata<O[OptionName]>
 }
+
 /** 组件标签 */
 export const componentsTags = {
   /** 视频 */
@@ -132,32 +147,45 @@ export const componentsTags = {
     order: 8,
   } as ComponentTag,
 }
+
+/** 组件入口函数的参数 */
+export interface ComponentEntryContext<O extends UnknownOptions = UnknownOptions> {
+  /** 当前组件的设置 */
+  settings: ComponentSettings<O>
+  /** 当前组件的信息 */
+  metadata: ComponentMetadata<O>
+  /** 核心 API */
+  coreApis: CoreApis
+}
+
 /** 组件入口函数 */
-export type ComponentEntry<T = unknown> = (
-  context: {
-    /** 当前组件的设置 */
-    settings: ComponentSettings
-    /** 当前组件的信息 */
-    metadata: ComponentMetadata
-    /** 核心 API */
-    coreApis: CoreApis
-  }
+export type ComponentEntry<O extends UnknownOptions = UnknownOptions, T = unknown> = (
+  context: ComponentEntryContext<O>,
 ) => T | Promise<T>
+
+export interface InstantStyleDefinition {
+  /** 样式ID */
+  name: string
+  /** 样式内容, 可以是一个导入样式的函数 */
+  style: string | (() => Promise<{ default: string }>)
+}
+export interface DomInstantStyleDefinition extends InstantStyleDefinition {
+  /** 设为 `true` 则注入到 `document.body` 末尾, 否则注入到 `document.head` 末尾 */
+  important?: boolean
+}
+export interface ShadowDomInstantStyleDefinition extends InstantStyleDefinition {
+  /** 设为 `true` 则注入到 Shadow DOM 中 */
+  shadowDom?: boolean
+}
+
 /** 带有函数/复杂对象的组件信息 */
-export interface FunctionalMetadata {
+export interface FunctionalMetadata<O extends UnknownOptions = UnknownOptions> {
   /** 主入口, 重新开启时不会再运行 */
-  entry: ComponentEntry
+  entry: ComponentEntry<O>
   /** 导出小组件 */
   widget?: Omit<Widget, 'name'>
   /** 首屏样式, 会尽快注入 (before DCL) */
-  instantStyles?: {
-    /** 样式ID */
-    name: string
-    /** 样式内容, 可以是一个导入样式的函数 */
-    style: string | (() => Promise<{ default: string }>)
-    /** 设为`true`则注入到`document.body`末尾, 否则注入到`document.head`末尾 */
-    important?: boolean
-  }[]
+  instantStyles?: (DomInstantStyleDefinition | ShadowDomInstantStyleDefinition)[]
   /** 重新开启时执行 */
   reload?: Executable
   /** 关闭时执行 */
@@ -165,14 +193,19 @@ export interface FunctionalMetadata {
   /** 插件化数据定义 */
   plugin?: Optional<PluginMinimalData, 'name'>
   /** 额外想要展示在设置里的选项 UI */
-  extraOptions?: Executable<VueModule>
+  extraOptions?: () => Promise<VueModule>
   /** 设置匹配的URL, 不匹配则不运行此组件 */
   urlInclude?: TestPattern
   /** 设置不匹配的URL, 不匹配则不运行此组件, 优先级高于`urlInclude` */
   urlExclude?: TestPattern
+  /** i18n 数据 */
+  i18n?: Record<string, LanguagePack | Executable<LanguagePack>>
 }
+
 /** 组件基本信息 */
-export interface ComponentMetadata extends FunctionalMetadata {
+export interface ComponentMetadata<O extends UnknownOptions = UnknownOptions>
+  extends FeatureBase,
+    FunctionalMetadata<O> {
   /** 组件名称 */
   name: string
   /** 显示名称 */
@@ -185,16 +218,14 @@ export interface ComponentMetadata extends FunctionalMetadata {
   configurable?: boolean
   /**  是否在设置界面中隐藏 (代码仍可操作) */
   hidden?: boolean
-  /** 组件描述 (markdown), 可以设置为对象提供多语言的描述 (`key: 语言代码`) */
-  description?: I18nDescription
   /** 组件子选项 */
-  options?: ComponentOptions
-  /** i18n 数据 */
-  i18n?: Record<string, LanguagePack>
-  /** 作者信息 */
-  author?: Author | Author[]
-  /** 编译时的 commit hash, 由 Babel 注入, 不需要手动填写 */
-  commitHash?: string
+  options?: OptionsMetadata<O>
+  /** 是否支持热重载 */
+  // allowHotReload?: boolean
 }
+
 /** 用户组件的非函数基本信息, 用于直接保存为 JSON */
 export type UserComponentMetadata = Omit<ComponentMetadata, keyof FunctionalMetadata>
+
+/** 推断 Record 的 Value 类型 */
+export type RecordValue<R> = R extends Record<any, infer V> ? V : never

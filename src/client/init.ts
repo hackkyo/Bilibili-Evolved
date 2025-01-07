@@ -35,13 +35,34 @@ export const init = async () => {
   })
 
   const { coreApis, externalApis } = await import('@/core/core-apis')
+  if (
+    unsafeWindow.bangumi_area_limit_hack &&
+    coreApis.settings.getComponentSettings<{ disableOnBalh: boolean }>('compatibilities').options
+      .disableOnBalh &&
+    coreApis.utils.matchUrlPattern('//www.bilibili.com/bangumi/play/')
+  ) {
+    console.log('BALH detected, Bilibili Evolved is disabled.')
+    return
+  }
+
   unsafeWindow.bilibiliEvolved = externalApis
   /** sand-boxed window, safe to use original name */
   window.coreApis = coreApis
   window.dq = coreApis.utils.dq
   window.dqa = coreApis.utils.dqa
+  window.de = coreApis.utils.de
+  window.des = coreApis.utils.des
+  window.dea = coreApis.utils.dea
+  window.deai = coreApis.utils.deai
   window.none = coreApis.utils.none
   window.componentsTags = coreApis.componentApis.component.componentsTags
+  window.console = coreApis.utils.log.useScopedConsole({
+    name: 'Bilibili Evolved',
+    color: '#00A0D8',
+  })
+  // window.console 和 console 是独立的引用
+  // eslint-disable-next-line no-global-assign
+  console = window.console
 
   const { loadAllUserComponents } = await import('@/components/component')
   await promiseLoadTrace('parse user components', loadAllUserComponents)
@@ -52,7 +73,9 @@ export const init = async () => {
 
   await promiseLoadTrace('load components', async () => {
     const { loadAllComponents } = await import('@/components/component')
-    return Promise.allSettled([loadAllComponents(), loadAllCustomStyles()])
+    return Promise.all([loadAllComponents(), loadAllCustomStyles()]).catch(error => {
+      console.error(error)
+    })
   })
   raiseLifeCycleEvent(LifeCycleEventTypes.ComponentsLoaded)
 
@@ -66,10 +89,9 @@ export const init = async () => {
       const { getGeneralSettings } = await import('@/core/settings/helpers')
       const { devMode } = getGeneralSettings()
       if (devMode) {
-        const {
-          promiseLoadTime,
-          promiseResolveTime,
-        } = await import('@/core/performance/promise-trace')
+        const { promiseLoadTime, promiseResolveTime } = await import(
+          '@/core/performance/promise-trace'
+        )
         const { logStats } = await import('@/core/performance/stats')
         logStats('init block', promiseLoadTime)
         logStats('init resolve', promiseResolveTime)

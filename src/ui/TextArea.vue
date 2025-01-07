@@ -36,11 +36,13 @@ export default Vue.extend({
   }
   textarea {
     resize: none;
+    field-sizing: content;
     width: 0;
     flex: 1 0 0;
     padding: 4px 6px;
     border-radius: 4px;
     background-color: transparent;
+    overflow: auto;
     border: none;
     outline: none !important;
     color: black;

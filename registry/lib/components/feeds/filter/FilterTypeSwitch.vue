@@ -1,5 +1,5 @@
 <template>
-  <div class="filter-type-switch feeds-filter-swtich">
+  <div class="filter-type-switch feeds-filter-switch">
     <label :class="{ disabled }">
       <span class="name" :class="{ disabled }">{{ type.name }}</span>
       <input v-model="disabled" type="checkbox" />
@@ -11,11 +11,10 @@
 
 <script lang="ts">
 import { getComponentSettings } from '@/core/settings'
-import {
-  VIcon,
-} from '@/ui'
+import { VIcon } from '@/ui'
+import { FeedsFilterOptions } from './options'
 
-const { options } = getComponentSettings('feedsFilter')
+const { options } = getComponentSettings<FeedsFilterOptions>('feedsFilter')
 export default Vue.extend({
   components: {
     VIcon,
@@ -48,18 +47,17 @@ export default Vue.extend({
   },
   methods: {
     setFilter(disabled: boolean, updateSettings = true) {
-      document.body.classList[disabled ? 'add' : 'remove'](
-        `feeds-filter-block-${this.name}`,
-      )
+      document.body.classList[disabled ? 'add' : 'remove'](`feeds-filter-block-${this.name}`)
       if (!updateSettings) {
         return
       }
+      const optionKey = this.optionKey as 'types' | 'specialTypes'
       if (disabled) {
-        options[this.optionKey].push(this.type.id)
+        options[optionKey].push(this.type.id)
       } else {
-        const index = options[this.optionKey].indexOf(this.type.id)
+        const index = options[optionKey].indexOf(this.type.id)
         if (index !== -1) {
-          options[this.optionKey].splice(index, 1)
+          options[optionKey].splice(index, 1)
         }
       }
     },
@@ -67,7 +65,7 @@ export default Vue.extend({
 })
 </script>
 <style lang="scss">
-.feeds-filter-swtich {
+.feeds-filter-switch {
   &:not(:last-child) {
     margin-bottom: 4px;
   }
