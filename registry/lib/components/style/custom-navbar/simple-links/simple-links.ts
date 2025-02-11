@@ -21,11 +21,6 @@ export const bangumi = getSimpleLinkItem({
   displayName: '番剧',
   href: 'https://www.bilibili.com/anime/',
 })
-export const drawing = getSimpleLinkItem({
-  name: 'drawing',
-  displayName: '相簿',
-  href: 'https://h.bilibili.com',
-})
 export const music = getSimpleLinkItem({
   name: 'music',
   displayName: '音频',
@@ -40,4 +35,9 @@ export const match = getSimpleLinkItem({
   name: 'match',
   displayName: '赛事',
   href: 'https://www.bilibili.com/v/game/match/',
+})
+export const creations = getSimpleLinkItem({
+  name: 'creations',
+  displayName: '创作中心',
+  href: 'https://member.bilibili.com/platform/home',
 })

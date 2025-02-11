@@ -4,9 +4,7 @@
       <VIcon :size="14" icon="mdi-earth" />翻译
     </div>
     <div v-if="translated" class="translated">
-      <a :href="activeTranslator && activeTranslator.link" target="_blank">
-        翻译自
-      </a>
+      <a :href="activeTranslator && activeTranslator.link" target="_blank"> 翻译自 </a>
       <VDropdown
         :items="Object.values(translateProviders)"
         :value="activeTranslator"
@@ -33,6 +31,7 @@ import { logError } from '@/core/utils/log'
 import { VDropdown, VIcon } from '@/ui'
 import { getTranslator, translateProviders, MachineTranslateProvider } from './translators'
 
+const MachineTranslatorClass = 'machine-translator-enabled'
 export default Vue.extend({
   components: {
     VDropdown,
@@ -56,6 +55,9 @@ export default Vue.extend({
     translated() {
       return this.result !== ''
     },
+  },
+  mounted() {
+    document.body.classList.add(MachineTranslatorClass)
   },
   methods: {
     changeTranslator(translator: MachineTranslateProvider) {
@@ -81,7 +83,7 @@ export default Vue.extend({
 </script>
 
 <style lang="scss">
-@import "common";
+@import 'common';
 
 .bb-comment .translate-container,
 .card-content .translate-container {
@@ -120,11 +122,13 @@ export default Vue.extend({
     }
   }
 }
-.bb-comment .reply-con .text-con {
-  display: block;
-  margin: 0 !important;
-}
-.card-content .translate-container {
-  margin: 13px 0 2px 0;
+body.machine-translator-enabled {
+  .bb-comment .reply-con .text-con {
+    display: block;
+    margin: 0 !important;
+  }
+  .card-content .translate-container {
+    margin: 13px 0 2px 0;
+  }
 }
 </style>

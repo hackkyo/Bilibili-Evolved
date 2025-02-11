@@ -1,23 +1,34 @@
+import { select } from '@/core/spin-query'
+
 let eventAttached = false
-export const disableProfilePopup = () => {
-  if (document.URL.replace(window.location.search, '') === 'https://t.bilibili.com/') {
-    (async () => {
-      const { select } = await import('@/core/spin-query')
-      const list = await select('.live-up-list') as HTMLElement
-      if (list !== null) {
-        const { getComponentSettings } = await import('@/core/settings')
-        if (eventAttached) {
-          return
-        }
-        const fixedSidebars = getComponentSettings('fixedSidebars')
-        const extendFeedsLive = getComponentSettings('extendFeedsLive')
-        list.addEventListener('mouseenter', e => {
-          if (fixedSidebars.enabled || extendFeedsLive.enabled) {
-            e.stopImmediatePropagation()
-          }
-        }, { capture: true })
-        eventAttached = true
-      }
-    })()
+let counter = 0
+export const DisableProfilePopupClass = 'disable-profile-popup'
+
+/** 禁止动态首页 - 正在直播中鼠标经过时出现 profile 弹窗 */
+export const disableProfilePopup = async () => {
+  if (document.URL.replace(window.location.search, '') !== 'https://t.bilibili.com/') {
+    return
   }
+  const list = (await select('.live-up-list, .bili-dyn-live-users__body')) as HTMLElement
+  if (list === null) {
+    return
+  }
+  counter++
+  if (eventAttached) {
+    return
+  }
+  list.addEventListener(
+    'mouseenter',
+    e => {
+      if (counter > 0) {
+        e.stopImmediatePropagation()
+      }
+    },
+    { capture: true },
+  )
+  eventAttached = true
+}
+/** 取消一次 {@link disableProfilePopup} 的效果, 可以用来配合其他地方的生命周期 */
+export const enableProfilePopup = () => {
+  counter--
 }

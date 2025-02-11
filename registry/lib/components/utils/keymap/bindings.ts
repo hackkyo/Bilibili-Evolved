@@ -1,6 +1,7 @@
 import { isTyping, matchUrlPattern } from '@/core/utils'
 import { mediaListUrls, watchlaterUrls } from '@/core/utils/urls'
 import { clickElement, changeVideoTime, showTip } from './actions'
+import { shadowDomObserver } from '@/core/shadow-root'
 
 export interface KeyBindingActionContext {
   binding: KeyBinding
@@ -13,7 +14,7 @@ export interface KeyBindingActionContext {
 }
 export interface KeyBindingAction {
   displayName: string
-  run: (context: KeyBindingActionContext) => any
+  run: (context: KeyBindingActionContext) => unknown
   prevent?: boolean
   ignoreTyping?: boolean
 }
@@ -21,12 +22,7 @@ export interface KeyBinding {
   keys: string[]
   action: KeyBindingAction
 }
-const modifyKeys = [
-  'shift',
-  'alt',
-  'ctrl',
-  'meta',
-]
+const modifyKeys = ['shift', 'alt', 'ctrl', 'meta']
 export const loadKeyBindings = lodash.once((bindings: KeyBinding[]) => {
   const isWatchlater = watchlaterUrls.some(url => matchUrlPattern(url))
   const isMediaList = mediaListUrls.some(url => matchUrlPattern(url))
@@ -34,7 +30,7 @@ export const loadKeyBindings = lodash.once((bindings: KeyBinding[]) => {
     enable: true,
     bindings,
   }
-  document.body.addEventListener('keydown', (e: KeyboardEvent & { [key: string]: boolean }) => {
+  const keyboardHandler = (e: KeyboardEvent & { [key: string]: boolean }) => {
     if (!config.enable) {
       return
     }
@@ -51,7 +47,11 @@ export const loadKeyBindings = lodash.once((bindings: KeyBinding[]) => {
 
       // 全景视频禁用 WASD 快捷键
       const panoramaControl = dq('.bilibili-player-sphere-control') as HTMLElement
-      if (panoramaControl !== null && panoramaControl.style.display !== 'none' && ['w', 'a', 's', 'd'].includes(key)) {
+      if (
+        panoramaControl !== null &&
+        panoramaControl.style.display !== 'none' &&
+        ['w', 'a', 's', 'd'].includes(key)
+      ) {
         return
       }
 
@@ -70,8 +70,8 @@ export const loadKeyBindings = lodash.once((bindings: KeyBinding[]) => {
       const restKeys = binding.keys
         .filter(k => !modifyKeys.includes(k.toLowerCase()))
         .map(k => k.toLowerCase())
-      const keyMatch = restKeys.includes(e.key.toLowerCase())
-        || restKeys.includes(e.code.toLowerCase())
+      const keyMatch =
+        restKeys.includes(e.key.toLowerCase()) || restKeys.includes(e.code.toLowerCase())
       if (!keyMatch) {
         return
       }
@@ -88,10 +88,15 @@ export const loadKeyBindings = lodash.once((bindings: KeyBinding[]) => {
 
       const actionSuccess = !lodash.isNil(actionResult)
       if (binding.action.prevent ?? actionSuccess) {
-        e.stopPropagation()
+        e.stopImmediatePropagation()
         e.preventDefault()
       }
     })
+  }
+  document.body.addEventListener('keydown', keyboardHandler, { capture: true })
+  shadowDomObserver.watchShadowDom({
+    added: shadowDom =>
+      shadowDom.shadowRoot.addEventListener('keydown', keyboardHandler, { capture: true }),
   })
   return config
 })
