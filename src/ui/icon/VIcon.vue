@@ -30,18 +30,26 @@ export default Vue.extend({
       type: Number,
       default: 24,
     },
+    colored: {
+      type: Boolean,
+      default: false,
+    },
   },
   computed: {
     classes() {
       const icons = this.$options.static.customIcons
       const icon = this.icon as string
+      const base = []
+      if (this.colored) {
+        base.push('colored')
+      }
       if (icon === '' || icon in icons) {
-        return []
+        return base
       }
       if (icon.startsWith('mdi-')) {
-        return ['mdi', icon]
+        return [...base, 'mdi', icon]
       }
-      return [`be-iconfont-${icon}`]
+      return [...base, `be-iconfont-${icon}`]
     },
   },
   beforeCreate(this: any) {
@@ -54,8 +62,7 @@ export default Vue.extend({
 /** 由于允许自定义SVG插入, 样式不能是scoped的, 否则匹配不上 */
 @font-face {
   font-family: 'be-iconfont-bilifont';
-  src: url('//s1.hdslb.com/bfs/seed/jinkela/header-v2/asserts/iconfont.ttf')
-    format('truetype');
+  src: url('//s1.hdslb.com/bfs/seed/jinkela/header-v2/asserts/iconfont.ttf') format('truetype');
 }
 @font-face {
   font-family: 'be-iconfont-vanfont';
@@ -78,8 +85,8 @@ export default Vue.extend({
   height: var(--size);
   @include bilifont();
   @include vanfont();
-  svg,
-  svg path {
+  &:not(.colored) svg,
+  &:not(.colored) svg path {
     fill: inherit;
     stroke: inherit;
     stroke-width: 0;

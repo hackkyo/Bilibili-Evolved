@@ -6,12 +6,7 @@
     </div>
     <h2>类型</h2>
     <div class="filter-types">
-      <FilterTypeSwitch
-        v-for="[name, type] of allTypes"
-        :key="type.id"
-        :name="name"
-        :type="type"
-      />
+      <FilterTypeSwitch v-for="[name, type] of allTypes" :key="type.id" :name="name" :type="type" />
     </div>
     <h2>关键词</h2>
     <div class="filter-patterns">
@@ -36,19 +31,16 @@
         <VIcon title="添加" icon="mdi-plus" :size="18" />
       </VButton>
     </div>
-    <h2>侧边栏</h2>
+    <h2>板块</h2>
     <div class="filter-side-card">
       <div
         v-for="[id, type] of Object.entries(allSideCards)"
         :key="id"
-        class="filter-side-card-switch feeds-filter-swtich"
+        class="filter-side-card-switch feeds-filter-switch"
         @click="toggleBlockSide(id)"
       >
         <label :class="{ disabled: sideDisabled(id) }">
-          <span
-            class="name"
-            :class="{ disabled: sideDisabled(id) }"
-          >{{ type.displayName }}</span>
+          <span class="name" :class="{ disabled: sideDisabled(id) }">{{ type.displayName }}</span>
           <VIcon :size="16" class="disabled" icon="mdi-cancel"></VIcon>
           <VIcon :size="16" icon="mdi-check"></VIcon>
         </label>
@@ -58,19 +50,21 @@
 </template>
 
 <script lang="ts">
-import { FeedsCard, FeedsCardType } from '@/components/feeds/api'
+import {
+  FeedsCard,
+  FeedsCardType,
+  feedsCardTypes,
+  forEachFeedsCard,
+  RepostFeedsCard,
+} from '@/components/feeds/api'
 import { getComponentSettings } from '@/core/settings'
 import { select } from '@/core/spin-query'
-import { attributes } from '@/core/observer'
-import {
-  VIcon,
-  TextBox,
-  VButton,
-} from '@/ui'
-import { FeedsFilterOptions } from '.'
+import { attributes, attributesSubtree } from '@/core/observer'
+import { VIcon, TextBox, VButton } from '@/ui'
+import { FeedsFilterOptions } from './options'
 import { hasBlockedPattern } from './pattern'
 
-const options = getComponentSettings('feedsFilter').options as FeedsFilterOptions
+const { options } = getComponentSettings<FeedsFilterOptions>('feedsFilter')
 interface SideCardType {
   className: string
   displayName: string
@@ -100,6 +94,13 @@ const sideCards: { [id: number]: SideCardType } = {
     className: 'most-viewed',
     displayName: '关注栏',
   },
+  6: {
+    className: 'compose',
+    displayName: '发布动态',
+  },
+}
+if (getComponentSettings('extendFeedsLive').enabled) {
+  delete sideCards[3]
 }
 let cardsManager: typeof import('@/components/feeds/api').feedsCardsManager
 const sideBlock = 'feeds-filter-side-block-'
@@ -131,28 +132,12 @@ export default Vue.extend({
   },
   async mounted() {
     this.updateBlockSide()
-    const tabBar = await select('.feed-card .tab-bar')
+    const tabBar = await select('.feed-card .tab-bar, .bili-dyn-list-tabs__list')
     if (!tabBar) {
       console.error('tabBar not found')
       return
     }
-    const tab = tabBar.querySelector(
-      '.tab:nth-child(1) .tab-text',
-    ) as HTMLAnchorElement
-    attributes(tab, () => {
-      document.body.classList.toggle(
-        // 'enable-feeds-filter',
-        'by-type',
-        !tab.classList.contains('selected'),
-      )
-    })
     document.body.classList.add('enable-feeds-filter')
-    const { feedsCardsManager, feedsCardTypes } = await import('@/components/feeds/api')
-    const success = await feedsCardsManager.startWatching()
-    if (!success) {
-      console.error('feedsCardsManager.startWatching() failed')
-      return
-    }
     const specialTypes = {
       'self-repost': {
         id: -1,
@@ -163,16 +148,37 @@ export default Vue.extend({
       .concat(Object.entries(specialTypes))
       .filter(([, type]) => type.id <= 2048)
       .map(([name, type]) => [name, lodash.clone(type)])
-    feedsCardsManager.cards.forEach(card => this.updateCard(lodash.clone(card)))
-    feedsCardsManager.addEventListener('addCard', e => {
-      const card = e.detail
-      this.updateCard(card)
+    cardsManager = await forEachFeedsCard({
+      added: card => {
+        this.updateCard(lodash.clone(card))
+      },
     })
-    cardsManager = feedsCardsManager
+    if (cardsManager.managerType === 'v1') {
+      const tab = tabBar.querySelector('.tab:nth-child(1) .tab-text') as HTMLAnchorElement
+      attributes(tab, () => {
+        document.body.classList.toggle('by-type', !tab.classList.contains('selected'))
+      })
+    }
+    if (cardsManager.managerType === 'v2') {
+      const mainContainer = (await select('.bili-dyn-home--member main')) as HTMLElement
+      /** 类型过滤选中"全部" */
+      const isAllTypesSelected = () => Boolean(dq('.bili-dyn-list-tabs__item:first-child.active'))
+      /** 关注列表选中"全部动态" */
+      const isAllUpsSelected = () => Boolean(dq('.bili-dyn-up-list__item:first-child.active'))
+      attributesSubtree(mainContainer, () => {
+        document.body.classList.toggle('by-type', isAllUpsSelected() && !isAllTypesSelected())
+      })
+    }
   },
   methods: {
     updateCard(card: FeedsCard) {
-      const block = options.patterns.some(p => hasBlockedPattern(p, card))
+      const blockableCard = {
+        ...card,
+      }
+      if (card.type === feedsCardTypes.repost) {
+        blockableCard.text += `\n${(card as RepostFeedsCard).repostText}`
+      }
+      const block = options.patterns.some(p => hasBlockedPattern(p, blockableCard))
       if (block) {
         card.element.classList.add('pattern-block')
       } else {
@@ -194,9 +200,7 @@ export default Vue.extend({
     updateBlockSide() {
       Object.entries(sideCards).forEach(([id, type]) => {
         const name = sideBlock + type.className
-        document.body.classList[
-          this.blockSideCards.includes(id) ? 'add' : 'remove'
-        ](name)
+        document.body.classList[this.blockSideCards.includes(id) ? 'add' : 'remove'](name)
       })
     },
     toggleBlockSide(id: number) {
@@ -219,105 +223,24 @@ export default Vue.extend({
 </script>
 
 <style lang="scss">
-@import "common";
+@import 'common';
+@import './blocker';
+
 body.enable-feeds-filter:not(.disable-feeds-filter) {
-  @each $name,
-    $value
-      in (
-        'repost': 1,
-        'textWithImages': 2,
-        'text': 4,
-        'video': 8,
-        'miniVideo': 16,
-        'column': 64,
-        'audio': 256,
-        'bangumi': 512,
-        'liveRecord': 2047,
-        'share': 2048
-      )
-  {
-    &:not(.by-type).feeds-filter-block-#{$name}
-      .feed-card
-      .card[data-type='#{$value}'] {
-      display: none !important;
-    }
-  }
-  @each $name in ('self-repost') {
-    &:not(.by-type).feeds-filter-block-#{$name}
-      .feed-card
-      .card[data-#{$name}] {
-      display: none !important;
-    }
-  }
-  $side-block: 'feeds-filter-side-block';
-  .left-panel,
-  .right-panel {
-    .scroll-content > * {
-      margin: 0 !important;
-      margin-bottom: 8px !important;
-    }
-  }
-  .left-panel {
-    > :not(:last-child) {
-      margin: 0 !important;
-      margin-bottom: 8px !important;
-    }
-  }
-  .left-panel .user-panel.f-left {
-    float: none !important;
-  }
-  &.#{$side-block}-profile {
-    .left-panel .user-wrapper {
-      display: none !important;
-    }
-  }
-  &.#{$side-block}-following-tags {
-    .left-panel .tag-panel,
-    .right-panel .dyn-topic-panel,
-    .right-panel .new-topic-panel {
-      display: none !important;
-    }
-  }
-  &.#{$side-block}-notice {
-    .right-panel .notice-panel {
-      display: none !important;
-    }
-  }
-  &.#{$side-block}-live {
-    .left-panel .live-panel {
-      display: none !important;
-    }
-  }
-  &.#{$side-block}-trending-tags {
-    .right-panel .tag-panel {
-      display: none !important;
-    }
-  }
-  &.#{$side-block}-most-viewed {
-    .card-list .most-viewed-panel {
-      display: none !important;
-    }
-  }
-  .feed-card .card.pattern-block {
-    display: none !important;
+  @include type-block();
+  @include side-block();
+  @include pattern-block();
+  @include plugin-block();
+}
+body.disable-feeds-filter {
+  .feeds-filter-section {
+    display: none;
   }
 }
-// .adaptive-scroll {
-//   > div:first-child:empty {
-//     display: none !important;
-//   }
-//   .scroll-content {
-//     position: static !important;
-//     top: unset !important;
-//     bottom: unset !important;
-//   }
-// }
 .feeds-filter {
   background-color: white;
   font-size: 12px;
   width: 100%;
-  padding: 12px 16px;
-  // float: left;
   border-radius: 4px;
   box-sizing: border-box;
   display: none;
@@ -333,13 +256,26 @@ body.enable-feeds-filter:not(.disable-feeds-filter) {
     transition: 0.2s ease-out;
     transition-property: border-color, color, background-color;
   }
+  & > * {
+    padding-left: 16px;
+    padding-right: 16px;
+    &:first-child {
+      padding-top: 12px;
+    }
+    &:last-child {
+      padding-bottom: 12px;
+    }
+  }
   body.dark & {
     color: #eee;
     background-color: #444;
   }
   .feeds-filter-header {
     cursor: pointer;
-    margin-bottom: 14px;
+    padding-bottom: 14px;
+    position: sticky;
+    top: 0;
+    background-color: inherit;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -351,7 +287,7 @@ body.enable-feeds-filter:not(.disable-feeds-filter) {
   }
   &.collapse {
     .feeds-filter-header {
-      margin-bottom: 0;
+      padding-bottom: 12px;
       .be-icon {
         transform: rotate(180deg);
       }
@@ -361,7 +297,7 @@ body.enable-feeds-filter:not(.disable-feeds-filter) {
     }
   }
   h2 {
-    font-weight: bold;
+    @include semi-bold();
     font-size: 13px;
     margin: 0;
     margin-bottom: 8px;

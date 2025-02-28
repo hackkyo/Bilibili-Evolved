@@ -24,6 +24,7 @@
         v-if="moreLink !== null && moreLink !== undefined"
         :href="typeof moreLink === 'function' ? moreLink(selectedTab) : moreLink"
         class="be-more-link"
+        target="_blank"
       >
         <VButton :disabled="!moreLink" round>
           <slot name="more-link">
@@ -67,6 +68,11 @@ export default Vue.extend({
         return true
       },
     },
+    defaultTab: {
+      type: String,
+      required: false,
+      default: '',
+    },
     link: {
       type: String,
       required: false,
@@ -78,17 +84,24 @@ export default Vue.extend({
     },
   },
   data() {
+    const tabs = this.tabs as TabMappings
     return {
-      selectedTab: this.tabs[0] as TabMapping,
+      selectedTabName:
+        tabs.find((t: TabMapping) => t.name === this.defaultTab)?.name ?? tabs[0].name,
     }
+  },
+  computed: {
+    selectedTab() {
+      return this.tabs.find((t: TabMapping) => t.name === this.selectedTabName)
+    },
   },
   mounted() {
     this.$emit('change', this.selectedTab.activeLink)
   },
   methods: {
     selectTab(tab: TabMapping) {
-      if (this.selectedTab !== tab) {
-        this.selectedTab = tab
+      if (this.selectedTabName !== tab.name) {
+        this.selectedTabName = tab.name
         tab.count = 0
         this.$emit('change', this.selectedTab.activeLink)
       } else if (tab.activeLink) {
@@ -101,6 +114,8 @@ export default Vue.extend({
 
 <style lang="scss">
 @import './common';
+@import './tabs';
+
 .be-tab-control {
   display: flex;
   flex-direction: column;
@@ -110,73 +125,13 @@ export default Vue.extend({
       justify-content: space-between;
       align-items: center;
       padding: 0 8px 8px 0;
-      .default-tabs {
-        display: flex;
-        padding: 6px 8px;
-        // margin-bottom: 8px;
-        .default-tab {
-          font-size: 14px;
-          position: relative;
-          cursor: pointer;
-          user-select: none;
-          @include text-color();
-          &:not(:last-child) {
-            margin-right: 16px;
-          }
-          &::after {
-            content: '';
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 50%;
-            display: block;
-            height: 3px;
-            border-radius: 2px;
-            width: 80%;
-            background-color: var(--theme-color);
-            transition: transform 0.2s ease-out;
-            transform: translateX(-50%) scaleX(0);
-          }
-          &-name {
-            transition: transform 0.2s ease-out;
-            opacity: 0.5;
-          }
-          &.selected {
-            .default-tab-name {
-              font-weight: bold;
-              transform: scale(1.1);
-              opacity: 1;
-            }
-          }
-          &.selected::after {
-            transform: translateX(-50%) scaleX(1);
-          }
-          &:not(.selected)[data-count]::before {
-            content: attr(data-count);
-            position: absolute;
-            bottom: calc(100% + 2px);
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 4px;
-            font-size: 11px;
-            border-radius: 10px;
-            background-color: #fff;
-            border: 1px solid #8882;
-            height: 10px;
-            min-width: 10px;
-            box-sizing: content-box;
-            line-height: 1;
-            body.dark & {
-              background-color: #333;
-            }
-          }
-        }
-      }
+      @include tabs-style();
       .header-item {
         flex: 1;
         margin: 0 8px;
+        &:empty {
+          display: none;
+        }
       }
       .be-more-link {
         .be-button {

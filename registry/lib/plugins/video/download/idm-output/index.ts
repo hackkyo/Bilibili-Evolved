@@ -13,18 +13,27 @@ export const plugin: PluginMetadata = {
       outputs.push({
         name: 'idm',
         displayName: 'IDM',
-        description: '使用 IDM 的 .ef2 格式导出, 可以在 IDM 中使用导入开始下载. 请注意此导出方式不能保留视频文件名.',
+        description:
+          '使用 IDM 的 .ef2 格式导出, 可以在 IDM 中使用导入开始下载, 建议配合 [ef2.exe](https://github.com/MotooriKashin/ef2) 以简化操作、保留文件名.',
         runAction: async action => {
           const { infos } = action
           const referer = document.URL.replace(window.location.search, '')
-          const items = infos.map(info => info.titledFragments.map(f => (
-            `<
+          const items = infos
+            .map(info =>
+              info.titledFragments.map(f =>
+                `<
 ${f.url}
 referer: ${referer}
 User-Agent: ${UserAgent}
->`.trim()
-          ))).flat()
-          const input = items.concat('').join('\n').replace(/([^\r])\n/g, '$1\r\n')
+filename: ${f.title}
+>`.trim(),
+              ),
+            )
+            .flat()
+          const input = items
+            .concat('')
+            .join('\n')
+            .replace(/([^\r])\n/g, '$1\r\n')
           await DownloadPackage.single(`${getFriendlyTitle()}.ef2`, input)
         },
       })

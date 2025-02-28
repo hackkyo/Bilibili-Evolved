@@ -2,7 +2,10 @@ import { getJson, monkey, postJson } from '@/core/ajax'
 import { Toast } from '@/core/toast'
 import { UserAgent } from '@/core/utils/constants'
 import { logError } from '@/core/utils/log'
-import { DownloadVideoOutput } from '../../../../components/video/download/types'
+import {
+  DownloadVideoAssets,
+  DownloadVideoOutput,
+} from '../../../../components/video/download/types'
 import { Aria2RpcProfile } from './rpc-profiles'
 
 interface RpcParam {
@@ -51,7 +54,8 @@ const handleRpcResponse = async (
       success: true,
       message: response.result,
     }
-  } catch (error) { // Host or port is invalid
+  } catch (error) {
+    // Host or port is invalid
     return {
       param,
       success: false,
@@ -116,9 +120,7 @@ const parseRpcOptions = (option: string): Record<string, string> => {
     .split('\n')
     .map(line => {
       // 实际上就是按第一个 = 号分割出 key / value, 其他后面的 = 还是算进 value 里
-      const [key, ...values] = line
-        .trim()
-        .split('=')
+      const [key, ...values] = line.trim().split('=')
       return [key.trim(), values.join('=').trim()]
     })
     .filter(it => Boolean(it[1])) // 过滤掉没有 = 的行 (value 为空)
@@ -128,32 +130,62 @@ export const aria2Rpc: DownloadVideoOutput = {
   name: 'aria2Rpc',
   displayName: 'aria2 RPC',
   description: '使用 aria2 RPC 功能发送下载请求.',
-  runAction: async (action, instance: Vue & {
-    selectedRpcProfile: Aria2RpcProfile
-  }) => {
-    const { infos } = action
-    const { selectedRpcProfile } = instance
+  runAction: async (
+    action,
+    instance: Vue & {
+      selectedRpcProfile: Aria2RpcProfile
+      isPluginDownloadAssets?: boolean
+    },
+  ) => {
+    const { infos, extraOnlineAssets } = action
+    const { selectedRpcProfile, isPluginDownloadAssets } = instance
     const { secretKey, dir, other } = selectedRpcProfile
     const referer = document.URL.replace(window.location.search, '')
-    const totalParams = infos.map(info => info.titledFragments.map(fragment => {
+    const getAria2Params = (url: string, title: string) => {
       const singleInfoParams = []
       if (secretKey) {
         singleInfoParams.push(`token:${secretKey}`)
       }
-      singleInfoParams.push([fragment.url])
+      singleInfoParams.push([url])
       singleInfoParams.push({
         referer,
         'user-agent': UserAgent,
-        out: fragment.title,
+        out: title,
         dir: dir || undefined,
         ...parseRpcOptions(other),
       })
-      const id = encodeURIComponent(fragment.title)
+      const id = encodeURIComponent(title)
       return {
         params: singleInfoParams,
         id,
       }
-    })).flat()
+    }
+
+    const videoParams = infos
+      .map(info =>
+        info.titledFragments.map(fragment => {
+          const { url, title } = fragment
+          return getAria2Params(url, title)
+        }),
+      )
+      .flat()
+
+    const isAriaAsset = (asset: DownloadVideoAssets) =>
+      isPluginDownloadAssets && asset.getUrls !== undefined
+    const assetsAriaParams = (
+      await Promise.all(
+        extraOnlineAssets
+          .filter(it => isAriaAsset(it.asset))
+          .map(async it => {
+            const { asset, instance: assetInstance } = it
+            const results = await asset.getUrls(infos, assetInstance)
+            return results.map(({ name, url }) => getAria2Params(url, name))
+          }),
+      )
+    ).flat()
+    action.extraOnlineAssets = extraOnlineAssets.filter(it => !isAriaAsset(it.asset))
+
+    const totalParams = [...videoParams, ...assetsAriaParams]
     const results = await sendRpc(selectedRpcProfile, totalParams)
     console.table(results)
     if (results.length === 1) {

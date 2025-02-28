@@ -1,11 +1,16 @@
-import { languageNameToCode } from '@/core/utils/i18n'
 import marked from 'marked'
 import { ComponentMetadata } from './component'
 import { getSelectedLanguage } from './i18n/helpers'
+import { Executable } from '@/core/common-types'
 
 type ItemWithDescription = Pick<ComponentMetadata, 'description' | 'author'>
-export const getDescriptionMarkdown = (component: ItemWithDescription) => {
-  const { description, author } = component
+
+/**
+ * 读取功能的 `description` 和 `author`, 生成描述 (Markdown)
+ * @param item 功能
+ */
+export const getDescriptionMarkdown = async (item: ItemWithDescription) => {
+  const { description, author } = item
   const authorPrefix = (() => {
     if (!author) {
       return ''
@@ -15,30 +20,38 @@ export const getDescriptionMarkdown = (component: ItemWithDescription) => {
     }
     return `by [@${author.name}](${author.link})\n\n`
   })()
-  const descriptionText = (() => {
+  const descriptionText = await (async () => {
     if (!description) {
-      // if (options && Object.keys(options).length > 0) {
-      //   const count = Object.keys(options).length
-      //   return `${count}个选项`
-      // }
       return '暂无描述.'
-      // return ''
     }
-    if (typeof description === 'string') {
-      return description
+    const parseDescriptionInput = async (input: string | Executable<string>) => {
+      if (typeof input === 'string') {
+        return input
+      }
+      return input()
     }
-    return (
-      description[languageNameToCode(getSelectedLanguage())]
-      || description['zh-CN']
-    )
+    if (typeof description === 'object') {
+      const currentLanguage = getSelectedLanguage()
+      const input = description[currentLanguage] ?? description['zh-CN']
+      return parseDescriptionInput(input)
+    }
+    return parseDescriptionInput(description)
   })()
   return authorPrefix + descriptionText
 }
-export const getDescriptionHTML = (component: ItemWithDescription) => marked(
-  getDescriptionMarkdown(component),
-)
-export const getDescriptionText = (component: ItemWithDescription) => {
-  const html = getDescriptionHTML(component)
+
+/**
+ * 同 `getDescriptionMarkdown`, 将最后的 Markdown 转为 HTML string
+ * @param item 功能
+ */
+export const getDescriptionHTML = async (item: ItemWithDescription) =>
+  marked(await getDescriptionMarkdown(item))
+/**
+ * 同 `getDescriptionMarkdown`, 将最后的 Markdown 转为纯文本 (innerText)
+ * @param item 功能
+ */
+export const getDescriptionText = async (item: ItemWithDescription) => {
+  const html = await getDescriptionHTML(item)
   const div = document.createElement('div')
   div.innerHTML = html
   return div.innerText

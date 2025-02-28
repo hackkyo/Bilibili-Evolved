@@ -22,18 +22,20 @@ export const textControlMixin = Vue.extend({
   data() {
     return {
       composing: false,
-      restListeners: lodash.omit(this.$listeners,
+      restListeners: lodash.omit(
+        this.$listeners,
         'change',
         'input',
         'compositionstart',
-        'compositionend'),
+        'compositionend',
+      ),
     }
   },
   methods: {
     emitChange() {
       let { value } = this.$refs.input
       if (this.validator) {
-        value = this.validator(value)
+        value = this.validator(value, this.text)
         if (this.changeOnBlur) {
           this.$refs.input.value = value
         }

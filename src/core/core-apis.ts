@@ -1,10 +1,15 @@
 import * as ajax from '@/core/ajax'
 import * as cdnTypes from '@/core/cdn-types'
+import * as containerQuery from '@/core/container-query'
 import * as download from '@/core/download'
+import * as dialog from '@/core/dialog'
 import * as externalInput from '@/core/external-input'
 import * as filePicker from '@/core/file-picker'
+import * as installFeature from '@/core/install-feature'
+import * as horizontalScroll from '@/core/horizontal-scroll'
 import * as lifeCycle from '@/core/life-cycle'
 import * as loadingMode from '@/core/loading-mode'
+import * as localStorage from '@/core/local-storage'
 import * as meta from '@/core/meta'
 import * as observer from '@/core/observer'
 import * as reorder from '@/core/reorder'
@@ -13,6 +18,7 @@ import * as spinQuery from '@/core/spin-query'
 import * as style from '@/core/style'
 import * as textColor from '@/core/text-color'
 import * as settings from '@/core/settings'
+import * as shadowRoot from '@/core/shadow-root'
 import * as userInfo from '@/core/user-info'
 import * as version from '@/core/version'
 import * as commonUtils from '@/core/utils'
@@ -36,11 +42,16 @@ import { pluginApis } from '@/plugins/api'
 export const coreApis = {
   ajax,
   cdnTypes,
+  containerQuery,
   download,
+  dialog,
   externalInput,
   filePicker,
+  installFeature,
+  horizontalScroll,
   lifeCycle,
   loadingMode,
+  localStorage,
   meta,
   observer,
   reorder,
@@ -51,6 +62,7 @@ export const coreApis = {
   userInfo,
   version,
   settings,
+  shadowRoot,
   toast,
   themeColor,
   utils: {
@@ -73,11 +85,16 @@ export type CoreApis = typeof coreApis
 export const externalApis = {
   ajax,
   ...cdnTypes,
+  ...containerQuery,
   ...download,
+  ...dialog,
   ...externalInput,
   ...filePicker,
+  ...installFeature,
+  ...horizontalScroll,
   lifeCycle,
   ...loadingMode,
+  ...localStorage,
   ...meta,
   observer,
   ...reorder,
@@ -87,6 +104,7 @@ export const externalApis = {
   ...textColor,
   ...userInfo,
   ...version,
+  ...shadowRoot,
   settingsApis: settings,
   get settings() {
     return settings.settings
@@ -109,7 +127,7 @@ export const externalApis = {
     ...componentApis.userComponent,
     ...componentApis.styledComponent,
     ...componentApis.launchBar,
-    ...(lodash.omit(componentApis, 'component', 'userComponent', 'styledComponent', 'launchBar')),
+    ...lodash.omit(componentApis, 'component', 'userComponent', 'styledComponent', 'launchBar'),
   },
   pluginApis: {
     ...pluginApis.style,

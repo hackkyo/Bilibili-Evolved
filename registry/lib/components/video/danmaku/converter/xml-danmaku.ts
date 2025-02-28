@@ -1,3 +1,4 @@
+import { escapeContent } from '@/components/video/xml-utils'
 import { BasicDanmakuData, Danmaku } from './danmaku-data'
 
 export interface XmlDanmakuData extends BasicDanmakuData {
@@ -14,10 +15,22 @@ export class XmlDanmaku extends Danmaku {
   rowId: number
   pDataArray: Array<number | string>
   constructor({
-    content, time, type, fontSize, color, timeStamp, pool, userHash, rowId,
+    content,
+    time,
+    type,
+    fontSize,
+    color,
+    timeStamp,
+    pool,
+    userHash,
+    rowId,
   }: XmlDanmakuData) {
     super({
-      content, time, type, fontSize, color,
+      content,
+      time,
+      type,
+      fontSize,
+      color,
     })
     this.timeStamp = parseInt(timeStamp)
     this.pool = parseInt(pool)
@@ -27,14 +40,22 @@ export class XmlDanmaku extends Danmaku {
   }
   text() {
     const pData = this.pDataArray.join(',')
-    return `<d p="${pData}">${this.content}</d>`
+    return `<d p="${pData}">${escapeContent(this.content)}</d>`
   }
   static parse(element: Element) {
     const pData = element.getAttribute('p')
     const [time, type, fontSize, color, timeStamp, pool, userHash, rowId] = pData.split(',')
     const content = element.innerHTML
     return new XmlDanmaku({
-      content, time, type, fontSize, color, timeStamp, pool, userHash, rowId,
+      content,
+      time,
+      type,
+      fontSize,
+      color,
+      timeStamp,
+      pool,
+      userHash,
+      rowId,
     })
   }
 }

@@ -147,8 +147,9 @@
 }
 .gift-item.buy {
   &.hover,
+  &.hover-item,
   &:hover {
-    @include background-color("2");
+    @include background-color("3");
   }
 }
 .cntr {
@@ -239,6 +240,7 @@
   }
 }
 .s_tag .tag-area {
+  .tag,
   .tag-item {
     @include background-color("4");
     @include border-color();
@@ -457,10 +459,6 @@
     .content {
       @include color("2");
     }
-  }
-  .fans-medal-level {
-    @include background-color("2");
-    @include foreground-color();
   }
 }
 .chat-control-panel .bottom{

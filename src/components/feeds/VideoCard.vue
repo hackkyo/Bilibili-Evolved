@@ -2,11 +2,15 @@
   <a
     class="video-card"
     target="_blank"
-    :href="epID ? ('https://www.bilibili.com/bangumi/play/ep' + epID) : ('https://www.bilibili.com/' + bvid)"
+    :href="
+      epID
+        ? 'https://www.bilibili.com/bangumi/play/ep' + epID
+        : 'https://www.bilibili.com/video/' + bvid
+    "
     :class="{ vertical: orientation === 'vertical', 'no-stats': !showStats }"
   >
     <div class="cover-container">
-      <DpiImage class="cover" :src="coverUrl" :size="{ height: 120, width: 200 }"></DpiImage>
+      <DpiImage class="cover" :src="coverUrl" :size="{ height: 120, width: 196 }"></DpiImage>
       <div v-if="isNew" class="new">NEW</div>
       <template v-if="pubTime && pubTimeText">
         <div class="publish-time-summary">
@@ -22,22 +26,25 @@
         class="watchlater"
         @click.stop.prevent="toggleWatchlater(aid)"
       >
-        <VIcon
-          :size="15"
-          :icon="watchlater ? 'mdi-check-circle' : 'mdi-clock-outline'"
-        ></VIcon>
+        <VIcon :size="15" :icon="watchlater ? 'mdi-check-circle' : 'mdi-clock-outline'"></VIcon>
         {{ watchlater ? '已添加' : '稍后再看' }}
       </div>
     </div>
     <h1 class="title" :title="title">{{ title }}</h1>
     <div v-if="topics && topics.length" class="topics">
       <a
-        v-for="topic of topics.slice(0,3)"
+        v-for="topic of topics.slice(0, 3)"
         :key="topic.id"
+        :title="topic.name"
         class="topic"
         target="_blank"
-        :href="'https://t.bilibili.com/topic/name/' + topic.name + '/feed'"
-      >#{{ topic.name }}#</a>
+        :href="topic.url || 'https://t.bilibili.com/topic/name/' + topic.name + '/feed'"
+      >
+        <VIcon icon="mdi-tag-outline" :size="14" />
+        <div class="topic-name">
+          {{ topic.name }}
+        </div>
+      </a>
     </div>
     <p v-else class="description" :title="description">{{ description }}</p>
     <a
@@ -45,7 +52,7 @@
       class="up"
       :class="{ 'no-face': !upFaceUrl }"
       target="_blank"
-      :href="upID ? ('https://space.bilibili.com/' + upID) : null"
+      :href="upID ? 'https://space.bilibili.com/' + upID : null"
     >
       <DpiImage v-if="upFaceUrl" class="face" :src="upFaceUrl" :size="24" />
       <VIcon v-else icon="up" />
@@ -60,46 +67,65 @@
           :class="{ 'no-face': !up.faceUrl }"
           target="_blank"
           :title="up.name"
-          :href="up.id ? ('https://space.bilibili.com/' + up.id) : null"
+          :href="up.id ? 'https://space.bilibili.com/' + up.id : null"
         >
           <DpiImage v-if="up.faceUrl" class="face" :src="up.faceUrl" :size="24" />
           <VIcon v-else icon="up" />
         </a>
       </div>
-      <div class="cooperation-note">
-        联合投稿
-      </div>
+      <div class="cooperation-note">联合投稿</div>
     </div>
     <div v-if="showStats" class="stats">
-      <template v-if="like && !vertical">
-        <VIcon icon="like-outline" :size="18"></VIcon>
-        {{ like }}
+      <template v-if="vertical">
+        <template v-if="playCount">
+          <VIcon icon="play" :size="statsIconSize"></VIcon>
+          {{ playCount }}
+        </template>
+        <template v-if="danmakuCount">
+          <VIcon icon="danmaku" :size="statsIconSize"></VIcon>
+          {{ danmakuCount }}
+        </template>
+        <template v-if="like">
+          <VIcon icon="like-outline" :size="statsIconSize"></VIcon>
+          {{ like }}
+        </template>
+        <template v-if="coins">
+          <VIcon icon="coin-outline" :size="statsIconSize"></VIcon>
+          {{ coins }}
+        </template>
+        <template v-if="favorites">
+          <VIcon icon="favorites-outline" :size="statsIconSize"></VIcon>
+          {{ favorites }}
+        </template>
       </template>
-      <template v-if="coins && !vertical">
-        <VIcon icon="coin-outline" :size="18"></VIcon>
-        {{ coins }}
-      </template>
-      <template v-if="favorites">
-        <VIcon icon="favorites-outline" :size="18"></VIcon>
-        {{ favorites }}
-      </template>
-      <template v-if="playCount">
-        <VIcon icon="play" :size="18"></VIcon>
-        {{ playCount }}
-      </template>
-      <template v-if="danmakuCount">
-        <VIcon icon="danmaku" :size="18"></VIcon>
-        {{ danmakuCount }}
+      <template v-else>
+        <template v-if="like">
+          <VIcon icon="like-outline" :size="statsIconSize"></VIcon>
+          {{ like }}
+        </template>
+        <template v-if="coins">
+          <VIcon icon="coin-outline" :size="statsIconSize"></VIcon>
+          {{ coins }}
+        </template>
+        <template v-if="favorites">
+          <VIcon icon="favorites-outline" :size="statsIconSize"></VIcon>
+          {{ favorites }}
+        </template>
+        <template v-if="playCount">
+          <VIcon icon="play" :size="statsIconSize"></VIcon>
+          {{ playCount }}
+        </template>
+        <template v-if="danmakuCount">
+          <VIcon icon="danmaku" :size="statsIconSize"></VIcon>
+          {{ danmakuCount }}
+        </template>
       </template>
     </div>
   </a>
 </template>
 
 <script lang="ts">
-import {
-  DpiImage,
-  VIcon,
-} from '@/ui'
+import { DpiImage, VIcon } from '@/ui'
 import { getUID } from '@/core/utils'
 import { watchlaterList, toggleWatchlater } from '@/components/video/watchlater'
 
@@ -146,8 +172,11 @@ export default {
       upID: 0,
       epID: 0,
       cooperation: [],
+      pubTime: 0,
+      pubTimeText: '',
       ...lodash.omit(this.data, 'watchlater'),
       watchlaterInit: this.data.watchlater,
+      statsIconSize: 14,
     }
   },
   computed: {
@@ -171,11 +200,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "common";
+@import 'common';
 
 .video-card {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: 196px 1fr;
   grid-template-rows: 1fr 1fr 1fr;
   grid-template-areas:
     'cover title'
@@ -204,17 +233,22 @@ export default {
   }
   &.vertical {
     grid-template-columns: auto auto;
-    grid-template-rows: 1fr auto auto;
+    grid-template-rows: auto 1fr auto auto;
     grid-template-areas:
       'cover cover'
       'title title'
-      'up up';
+      'up up'
+      'stats stats';
+    gap: 4px;
+
     .description,
     .topics {
       display: none;
     }
     .cover-container {
       border-radius: $radius $radius 0 0;
+      width: calc(var(--card-width) - 2px);
+      height: calc(var(--card-width) / 20 * 12.5);
     }
     .title {
       display: -webkit-box;
@@ -224,8 +258,9 @@ export default {
       word-break: break-all;
       white-space: normal;
       line-height: 1.5;
-      margin: 8px 0;
-      font-size: 10pt;
+      margin: 4px 0;
+      padding: 0 10px;
+      font-size: 14px;
     }
     .up {
       align-self: start;
@@ -244,12 +279,17 @@ export default {
       }
     }
     .cooperation {
-      margin: 0 12px 8px 8px;
+      margin: 0 12px 6px 8px;
+      &-note {
+        display: flex;
+        opacity: 0.5;
+      }
     }
     .stats {
+      grid-area: stats;
       align-self: end;
       justify-self: start;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       margin-right: 0;
     }
   }
@@ -266,7 +306,6 @@ export default {
   &:hover {
     .cover {
       transform: scale(1.05);
-      transition: 0.1s cubic-bezier(0.39, 0.58, 0.57, 1);
     }
     .publish-time-summary,
     .duration,
@@ -285,10 +324,12 @@ export default {
     grid-area: cover;
     border-radius: $radius 0 0 $radius;
     position: relative;
-    width: calc(var(--card-width) - 2px);
-    height: calc(var(--card-width) / 20 * 12);
+    width: calc(var(--card-height) / 12.5 * 20);
+    height: calc(var(--card-height) - 2px);
     overflow: hidden;
     .cover {
+      transition: 0.1s cubic-bezier(0.39, 0.58, 0.57, 1);
+      -webkit-transform: rotate(0deg);
       object-fit: cover;
       width: 100%;
       height: 100%;
@@ -319,7 +360,7 @@ export default {
       left: 6px;
       background-color: var(--theme-color);
       color: var(--foreground-color);
-      font-weight: bold;
+      @include semi-bold();
       padding: 2px 8px;
       border-radius: 10px;
       height: 20px;
@@ -346,10 +387,10 @@ export default {
   }
   .title {
     grid-area: title;
-    font-size: 12pt;
-    font-weight: bold;
+    font-size: 15px;
+    @include semi-bold();
     color: inherit;
-    padding: 0 10px;
+    padding: 4px 12px 0 12px;
     white-space: nowrap;
     overflow: hidden;
     justify-self: stretch;
@@ -359,23 +400,25 @@ export default {
     }
   }
   .topics {
+    @include h-center();
     grid-area: description;
-    display: flex;
-    align-items: center;
     margin-left: 12px;
     .topic {
+      @include h-center(4px);
       color: inherit;
       padding: 4px 8px;
-      background-color: #8882;
+      border: 1px solid #8882;
       margin-right: 8px;
       border-radius: 14px;
-      white-space: nowrap;
-      max-width: 120px;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      opacity: 0.75;
+      .topic-name {
+        max-width: 84px;
+        @include single-line();
+      }
       &:hover {
-        background-color: #8884;
+        background-color: #8882;
         color: var(--theme-color);
+        opacity: 1;
       }
     }
   }
@@ -412,7 +455,7 @@ export default {
       background-color: transparent;
       padding: 0;
       .be-icon {
-        font-size: 14pt;
+        font-size: 18px;
         opacity: 0.75;
       }
     }
@@ -420,10 +463,12 @@ export default {
       border-radius: 50%;
       width: 24px;
       height: 24px;
+      box-sizing: content-box;
     }
   }
   .up {
     margin-left: 12px;
+    margin-bottom: 6px;
     display: flex;
     align-items: center;
     padding: 2px;
@@ -446,8 +491,11 @@ export default {
       }
     }
   }
-  &.no-stats .up {
-    margin-bottom: 8px;
+  &.no-stats {
+    .up,
+    .cooperation {
+      margin-bottom: 4px;
+    }
   }
   .cooperation {
     margin-left: 12px;
@@ -481,15 +529,19 @@ export default {
       }
     }
     &-note {
-      opacity: .5;
+      display: none;
     }
   }
   .stats {
+    font-size: 11px;
     justify-self: self-end;
     margin-right: 12px;
     display: flex;
     align-items: center;
     opacity: 0.5;
+    > :nth-child(n + 4) {
+      display: none;
+    }
     .be-icon {
       // font-size: 12pt;
       margin: 0 4px 0 12px;

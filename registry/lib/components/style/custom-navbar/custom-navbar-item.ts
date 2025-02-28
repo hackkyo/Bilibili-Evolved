@@ -1,6 +1,8 @@
+import { createPopper, Instance as Popper } from '@popperjs/core'
 import { VueModule, Executable } from '@/core/common-types'
 import { getComponentSettings, addComponentListener } from '@/core/settings'
-import { createPopper, Instance as Popper } from '@popperjs/core'
+import type { CustomNavbarOptions } from '.'
+import { getUID } from '@/core/utils'
 
 export const CustomNavbarItems = 'customNavbar.items'
 export const CustomNavbarRenderedItems = 'customNavbar.renderedItems'
@@ -72,20 +74,7 @@ export class CustomNavbarItem implements Required<CustomNavbarItemInit> {
   order = 0
   requestedPopup: boolean
 
-  static navbarOptions = getComponentSettings('customNavbar').options as {
-    hidden: string[]
-    order: { [name: string]: number }
-    padding: number
-    globalFixed: boolean
-    fill: boolean
-    transparent: boolean
-    shadow: boolean
-    openInNewTab: boolean
-    openInNewTabOverrides: Record<string, boolean>
-    seasonLogo: boolean
-    touch: boolean
-    refreshOnPopup: boolean
-  }
+  static navbarOptions = getComponentSettings('customNavbar').options as CustomNavbarOptions
   constructor(init: CustomNavbarItemInit) {
     Object.assign(this, init)
     if (!this.name) {
@@ -95,10 +84,15 @@ export class CustomNavbarItem implements Required<CustomNavbarItemInit> {
       throw new Error('Missing CustomNavbarItem content')
     }
 
-    addComponentListener('customNavbar.touch', (value: boolean) => {
-      this.touch = value ? init.touch : false
-    }, true)
-    this.hidden = CustomNavbarItem.navbarOptions.hidden.includes(this.name)
+    addComponentListener(
+      'customNavbar.touch',
+      (value: boolean) => {
+        this.touch = value ? init.touch : false
+      },
+      true,
+    )
+    this.hidden =
+      CustomNavbarItem.navbarOptions.hidden.includes(this.name) || (!getUID() && init.loginRequired)
     const orderMap = CustomNavbarItem.navbarOptions.order
     this.order = orderMap[this.name] || 0
     this.requestedPopup = !this.lazy

@@ -1,117 +1,79 @@
 <template>
-  <VPopup
-    v-model="open"
-    class="download-video-panel"
-    :trigger-element="triggerElement"
-  >
+  <VPopup v-model="open" fixed class="download-video-panel" :trigger-element="triggerElement">
     <div class="download-video-panel-header">
       <VIcon icon="mdi-download" />
-      <div class="title">
-        下载视频
-      </div>
+      <div class="title">下载视频</div>
       <VButton type="transparent" title="关闭" @click="open = false">
         <VIcon icon="mdi-close" :size="20" />
       </VButton>
     </div>
-    <div
-      v-if="selectedInput"
-      class="download-video-config-item"
-    >
-      <div class="download-video-config-title">
-        输入源:
+    <div class="download-video-panel-content">
+      <div v-if="selectedInput" class="download-video-config-item">
+        <div class="download-video-config-title">输入源:</div>
+        <VDropdown v-model="selectedInput" :items="inputs" />
       </div>
-      <VDropdown
-        v-model="selectedInput"
-        :items="inputs"
-      />
-    </div>
-    <div
-      v-if="inputs.length === 0"
-      class="download-video-config-item error"
-    >
-      没有匹配的输入源, 请确保安装了适合此页面的插件.
-    </div>
-    <component
-      :is="selectedInput.component"
-      v-if="selectedInput && selectedInput.component"
-      ref="inputOptions"
-    />
-    <div
-      v-if="selectedApi"
-      class="download-video-config-item"
-    >
-      <div class="download-video-config-title">
-        格式:
+      <div v-if="inputs.length === 0" class="download-video-config-item error">
+        没有匹配的输入源, 请确保安装了适合此页面的插件.
       </div>
-      <VDropdown
-        v-model="selectedApi"
-        :items="apis"
+      <component
+        :is="selectedInput.component"
+        v-if="selectedInput && selectedInput.component"
+        ref="inputOptions"
       />
-    </div>
-    <div
-      v-if="selectedApi && selectedApi.description"
-      class="download-video-config-description"
-      v-html="selectedApi.description"
-    >
-    </div>
-    <div
-      v-if="selectedQuality"
-      class="download-video-config-item"
-    >
-      <div class="download-video-config-title">
-        清晰度:
-      </div>
-      <VDropdown
-        v-model="selectedQuality"
-        :items="filteredQualities"
-        @change="saveSelectedQuality()"
-      />
-    </div>
-    <template v-if="!testData.multiple && selectedQuality">
-      <div
-        v-if="testData.videoInfo"
-        class="download-video-config-description"
-      >
-        预计大小: {{ formatFileSize(testData.videoInfo.totalSize) }}
+      <div v-if="selectedApi" class="download-video-config-item">
+        <div class="download-video-config-title">格式:</div>
+        <VDropdown v-model="selectedApi" :items="apis" />
       </div>
       <div
-        v-if="testData.videoInfo === null"
+        v-if="selectedApi && selectedApi.description"
         class="download-video-config-description"
-      >
-        正在计算大小
+        v-html="selectedApi.description"
+      ></div>
+      <div v-if="selectedQuality" class="download-video-config-item">
+        <div class="download-video-config-title">清晰度:</div>
+        <VDropdown
+          v-model="selectedQuality"
+          :items="filteredQualities"
+          @change="saveSelectedQuality()"
+        />
       </div>
-    </template>
-    <component
-      :is="a.component"
-      v-for="a of assetsWithOptions"
-      :key="a.name"
-      ref="assetsOptions"
-      :name="a.name"
-    />
-    <div
-      v-if="selectedOutput"
-      class="download-video-config-item"
-    >
-      <div class="download-video-config-title">
-        输出方式:
+      <template v-if="!testData.multiple && selectedQuality">
+        <div v-if="testData.videoInfo" class="download-video-config-description">
+          预计大小: {{ formatFileSize(testData.videoInfo.totalSize) }}
+        </div>
+        <div v-if="testData.videoInfo === null" class="download-video-config-description">
+          正在计算大小
+        </div>
+      </template>
+      <div class="download-video-config-item">
+        <div class="download-video-config-title">使用备用下载地址:</div>
+        <SwitchBox v-model="useBackupUrls" />
       </div>
-      <VDropdown
-        v-model="selectedOutput"
-        :items="outputs"
+      <div class="download-video-config-description">
+        若默认下载地址速度缓慢, 可以尝试更换备用下载地址.
+      </div>
+      <component
+        :is="a.component"
+        v-for="a of assetsWithOptions"
+        :key="a.name"
+        ref="assetsOptions"
+        :name="a.name"
+      />
+      <div v-if="selectedOutput" class="download-video-config-item">
+        <div class="download-video-config-title">输出方式:</div>
+        <VDropdown v-model="selectedOutput" :items="outputs" />
+      </div>
+      <div
+        v-if="selectedOutput && selectedOutput.description"
+        class="download-video-config-description"
+        v-html="selectedOutput.description"
+      ></div>
+      <component
+        :is="selectedOutput.component"
+        v-if="selectedOutput && selectedOutput.component"
+        ref="outputOptions"
       />
     </div>
-    <div
-      v-if="selectedOutput && selectedOutput.description"
-      class="download-video-config-description"
-    >
-      {{ selectedOutput.description }}
-    </div>
-    <component
-      :is="selectedOutput.component"
-      v-if="selectedOutput && selectedOutput.component"
-      ref="outputOptions"
-    />
-
     <div class="download-video-panel-footer">
       <VButton
         class="run-download"
@@ -130,18 +92,17 @@ import { getComponentSettings } from '@/core/settings'
 import { matchUrlPattern } from '@/core/utils'
 import { logError } from '@/core/utils/log'
 import { formatFileSize } from '@/core/utils/formatters'
-import {
-  VPopup, VButton, VDropdown, VIcon,
-} from '@/ui'
+import { VPopup, VButton, VDropdown, VIcon, SwitchBox } from '@/ui'
 import { registerAndGetData } from '@/plugins/data'
 import { allQualities, VideoQuality } from '@/components/video/video-quality'
 import { Toast } from '@/core/toast'
+import { getFriendlyTitle } from '@/core/utils/title'
 import { bangumiBatchInput } from './inputs/bangumi/batch'
-import { videoBatchInput } from './inputs/video/batch'
+import { videoBatchInput, videoSeasonBatchInput } from './inputs/video/batch'
 import { videoSingleInput } from './inputs/video/input'
-import { videoDashAVC, videoDashHEVC, audioDash } from './apis/dash'
+import { videoDashAvc, videoDashHevc, videoDashAv1, videoAudioDash } from './apis/dash'
 import { videoFlv } from './apis/flv'
-import { toastOutput } from './outputs/toast'
+import { streamSaverOutput } from './outputs/stream-saver'
 import {
   DownloadVideoAction,
   DownloadVideoApi,
@@ -151,44 +112,49 @@ import {
   DownloadVideoOutput,
 } from './types'
 
-const [inputs] = registerAndGetData(
-  'downloadVideo.inputs', [
-    videoSingleInput,
-    videoBatchInput,
-    bangumiBatchInput,
-  ] as DownloadVideoInput[],
-)
-const [apis] = registerAndGetData(
-  'downloadVideo.apis', [
-    videoFlv,
-    videoDashAVC,
-    videoDashHEVC,
-    audioDash,
-  ] as DownloadVideoApi[],
-)
-const [assets] = registerAndGetData(
-  'downloadVideo.assets', [] as DownloadVideoAssets[],
-)
-const [outputs] = registerAndGetData(
-  'downloadVideo.outputs', [
-    toastOutput,
-  ] as DownloadVideoOutput[],
-)
+const [inputs] = registerAndGetData('downloadVideo.inputs', [
+  videoSingleInput,
+  videoBatchInput,
+  videoSeasonBatchInput,
+  bangumiBatchInput,
+] as DownloadVideoInput[])
+const [apis] = registerAndGetData('downloadVideo.apis', [
+  videoFlv,
+  videoDashAvc,
+  videoDashHevc,
+  videoDashAv1,
+  videoAudioDash,
+] as DownloadVideoApi[])
+const [assets] = registerAndGetData('downloadVideo.assets', [] as DownloadVideoAssets[])
+const [outputs] = registerAndGetData('downloadVideo.outputs', [
+  streamSaverOutput,
+] as DownloadVideoOutput[])
 const { basicConfig } = getComponentSettings('downloadVideo').options as {
   basicConfig: {
     api: string
     quality: number
     output: string
+    useBackupUrls: boolean
   }
 }
-const filterData = (items: { match?: TestPattern }[]) => {
+const filterData = <T extends { match?: TestPattern }>(items: T[]) => {
   const matchedItems = items.filter(it => it.match?.some(p => matchUrlPattern(p)) ?? true)
   return matchedItems
 }
+const getFallbackTestVideoInfo = () =>
+  ({
+    aid: unsafeWindow.aid,
+    cid: unsafeWindow.cid,
+    title: getFriendlyTitle(true),
+  } as DownloadVideoInputItem)
 
 export default Vue.extend({
   components: {
-    VPopup, VButton, VDropdown, VIcon,
+    VPopup,
+    VButton,
+    VDropdown,
+    VIcon,
+    SwitchBox,
   },
   props: {
     triggerElement: {
@@ -196,8 +162,8 @@ export default Vue.extend({
     },
   },
   data() {
-    const lastApi = basicConfig.api
     const lastOutput = basicConfig.output
+    const lastUseBackupUrls = basicConfig.useBackupUrls
     return {
       open: false,
       busy: false,
@@ -213,10 +179,11 @@ export default Vue.extend({
       selectedQuality: undefined,
       inputs: [],
       selectedInput: undefined,
-      apis,
-      selectedApi: apis.find(it => it.name === lastApi) || apis[0],
+      apis: [],
+      selectedApi: undefined,
       outputs,
       selectedOutput: outputs.find(it => it.name === lastOutput) || outputs[0],
+      useBackupUrls: lastUseBackupUrls || false,
     }
   },
   computed: {
@@ -233,7 +200,9 @@ export default Vue.extend({
       if (this.busy || !this.open) {
         return false
       }
-      const isAnySelectionEmpty = Object.entries(this).filter(([key]) => key.startsWith('selected')).some(([, value]) => !value)
+      const isAnySelectionEmpty = Object.entries(this)
+        .filter(([key]) => key.startsWith('selected'))
+        .some(([, value]) => !value)
       if (isAnySelectionEmpty) {
         return false
       }
@@ -260,12 +229,29 @@ export default Vue.extend({
       }
       basicConfig.output = output.name
     },
+    useBackupUrls(useBackupUrls: boolean) {
+      if (useBackupUrls === undefined) {
+        return
+      }
+      basicConfig.useBackupUrls = useBackupUrls
+    },
   },
   mounted() {
     coreApis.observer.videoChange(() => {
+      this.selectedInput = undefined
+      this.selectedApi = undefined
+
       const matchedInputs = filterData(inputs)
       this.inputs = matchedInputs
       this.selectedInput = matchedInputs[0]
+      const matchedApis = filterData(apis)
+      this.apis = matchedApis
+      const lastApi = matchedApis.find(api => api.name === basicConfig.api)
+      if (lastApi) {
+        this.selectedApi = lastApi
+      } else {
+        this.selectedApi = matchedApis[0]
+      }
     })
   },
   methods: {
@@ -285,32 +271,36 @@ export default Vue.extend({
       return videoItems
     },
     async updateTestVideoInfo() {
-      if (!this.selectedInput) {
+      if (!this.selectedInput || !this.selectedApi) {
         return
       }
       this.testData.videoInfo = null
-      const items: DownloadVideoInputItem[] = await this.getVideoItems()
-      console.log('[updateTestVideoInfo]', items)
-      this.testData.multiple = items.length > 1
+      const input = this.selectedInput as DownloadVideoInput
+      const testItem = input.getTestInput?.() ?? getFallbackTestVideoInfo()
+      console.log('[updateTestVideoInfo]', testItem)
+      this.testData.multiple = input.batch
       const api = this.selectedApi as DownloadVideoApi
-      const [firstItem] = items
-      // 没有清晰度信息时先获取清晰度列表
-      if (!this.selectedQuality) {
-        const videoInfo = await api.downloadVideoInfo(firstItem)
+      try {
+        const videoInfo = await api.downloadVideoInfo(testItem)
         this.qualities = videoInfo.qualities
-        this.selectedQuality = videoInfo.qualities[0]
-        if (basicConfig.quality) {
-          const [matchedQuality] = videoInfo.qualities.filter(q => q.value <= basicConfig.quality)
-          if (matchedQuality) {
-            this.selectedQuality = matchedQuality
+        const isSelectedQualityOutdated =
+          !this.selectedQuality ||
+          !videoInfo.qualities.some(q => q.value === this.selectedQuality.value)
+        if (isSelectedQualityOutdated) {
+          this.selectedQuality = videoInfo.qualities[0]
+          if (basicConfig.quality) {
+            const [matchedQuality] = videoInfo.qualities.filter(q => q.value <= basicConfig.quality)
+            if (matchedQuality) {
+              this.selectedQuality = matchedQuality
+            }
           }
         }
-      }
-      try {
-        firstItem.quality = this.selectedQuality
-        const videoInfo = await api.downloadVideoInfo(firstItem)
-        this.testData.videoInfo = videoInfo
+        // 填充 quality 后要再请求一次得到对应 quality 的统计数据
+        testItem.quality = this.selectedQuality
+        const qualityVideoInfo = await api.downloadVideoInfo(testItem)
+        this.testData.videoInfo = qualityVideoInfo
       } catch (error) {
+        console.error('[updateTestVideoInfo] failed', error)
         this.testData.videoInfo = undefined
       }
     },
@@ -332,16 +322,26 @@ export default Vue.extend({
           Toast.info('未接收到可下载数据, 请检查输入源和格式是否适用于当前视频.', '下载视频', 3000)
           return
         }
+        if (this.useBackupUrls) {
+          videoInfos.forEach(videoInfo => {
+            videoInfo.fragments.forEach(fragment => {
+              fragment.url =
+                fragment.backupUrls && fragment.backupUrls.length !== 0
+                  ? fragment.backupUrls.at(0)
+                  : fragment.url
+            })
+          })
+        }
         const action = new DownloadVideoAction(videoInfos)
-        const extraAssets = (await Promise.all(
-          assets.map(a => a.getAssets(
-            videoInfos,
-            this.$refs.assetsOptions.find((c: any) => c.$attrs.name === a.name),
-          )),
-        )).flat()
-        action.extraAssets.push(...extraAssets)
-        await action.downloadExtraAssets()
+        assets.forEach(a => {
+          const assetsType = a?.getUrls ? action.extraOnlineAssets : action.extraAssets
+          assetsType.push({
+            asset: a,
+            instance: this.$refs.assetsOptions.find((c: any) => c.$attrs.name === a.name),
+          })
+        })
         await output.runAction(action, instance)
+        await action.downloadExtraAssets()
       } catch (error) {
         logError(error)
       } finally {
@@ -352,26 +352,24 @@ export default Vue.extend({
 })
 </script>
 <style lang="scss">
-@import "common";
+@import 'common';
+
 .download-video-panel {
+  @include card();
   font-size: 12px;
+  padding: 6px;
   top: 100px;
   left: 50%;
   transform: translateX(-50%) scale(0.95);
-  transition: .2s ease-out;
+  transition: 0.2s ease-out;
   z-index: 1000;
   width: 320px;
+  height: calc(100vh - 200px);
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  padding: 12px;
 
-  @include card();
   &.open {
     transform: translateX(-50%);
-  }
-  > :not(:first-child) {
-    margin-top: 12px;
   }
   .be-textbox,
   .be-textarea {
@@ -379,16 +377,28 @@ export default Vue.extend({
   }
   &-header {
     @include h-center();
-    align-self: stretch;
+    border-bottom: 1px solid #8882;
+    padding: 6px 0;
+    margin: 0 6px;
 
     .title {
       font-size: 16px;
-      font-weight: bold;
+      @include semi-bold();
       flex-grow: 1;
       margin: 0 8px;
     }
     .be-button {
       padding: 4px;
+    }
+  }
+  &-content {
+    @include no-scrollbar();
+    @include v-stretch();
+    flex: 1 0 0;
+    padding: 12px 6px;
+    align-items: flex-start;
+    > :not(:first-child) {
+      margin-top: 12px;
     }
   }
   .download-video-config-item {
@@ -397,20 +407,25 @@ export default Vue.extend({
       margin-right: 8px;
     }
     &.error {
-      color: #E57373;
+      color: #e57373;
     }
   }
   .download-video-config-section {
     align-self: stretch;
   }
   .download-video-config-description {
-    opacity: .5;
+    color: #888d;
     margin-top: 4px;
+    a {
+      color: var(--theme-color-70);
+    }
   }
   &-footer {
-    align-self: stretch;
-    justify-content: center;
     @include h-center();
+    border-top: 1px solid #8882;
+    padding: 6px 0;
+    margin: 0 6px;
+    justify-content: center;
   }
   .run-download {
     font-size: 13px;

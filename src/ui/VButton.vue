@@ -4,7 +4,7 @@
     role="button"
     :aria-disabled="disabled"
     :tabindex="disabled ? -1 : 0"
-    :class="{ [type]: true, disabled, round }"
+    :class="{ [type]: true, disabled, round, icon }"
     v-on="disabled ? null : $listeners"
     @keydown.enter.prevent="$listeners.click && $listeners.click($event)"
     @keydown.space.prevent="$listeners.click && $listeners.click($event)"
@@ -24,6 +24,10 @@ export default Vue.extend({
       default: 'light',
     },
     round: {
+      type: Boolean,
+      default: false,
+    },
+    icon: {
       type: Boolean,
       default: false,
     },
@@ -60,6 +64,12 @@ export default Vue.extend({
   &.round {
     border-radius: calc(1em + 8px);
     padding: 4px 10px;
+  }
+  &.icon {
+    border-radius: 50%;
+    padding: 4px;
+    // b 站样式会塞个背景图
+    background-image: none !important;
   }
 
   .content-container {
@@ -105,8 +115,7 @@ export default Vue.extend({
         box-shadow: 0 0 0 1px var(--theme-color);
       }
       &:focus-within {
-        box-shadow: 0 0 0 1px var(--theme-color),
-          0 0 0 3px var(--theme-color-20);
+        box-shadow: 0 0 0 1px var(--theme-color), 0 0 0 3px var(--theme-color-20);
       }
       &:hover,
       &:focus-within {
@@ -121,8 +130,7 @@ export default Vue.extend({
       &:active,
       &:focus-within {
         background-color: #fff;
-        box-shadow: 0 0 0 1px var(--theme-color),
-          0 0 0 3px var(--theme-color-20);
+        box-shadow: 0 0 0 1px var(--theme-color), 0 0 0 3px var(--theme-color-20);
       }
     }
     body.dark &.light {
@@ -133,8 +141,7 @@ export default Vue.extend({
       &:active,
       &:focus-within {
         background-color: #333;
-        box-shadow: 0 0 0 1px var(--theme-color),
-          0 0 0 3px var(--theme-color-20);
+        box-shadow: 0 0 0 1px var(--theme-color), 0 0 0 3px var(--theme-color-20);
       }
     }
   }

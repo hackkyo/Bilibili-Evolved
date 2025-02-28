@@ -4,11 +4,11 @@ interface SimpleLinkConfig {
   name: string
   displayName: string
   href: string
+  content?: string
 }
 const getSimpleLinkItem = (config: SimpleLinkConfig): SimpleLinkConfig & CustomNavbarItemInit => ({
-  ...config,
   content: config.displayName,
-
+  ...config,
   active: document.URL.startsWith(config.href),
 })
 export const ranking = getSimpleLinkItem({
@@ -18,13 +18,9 @@ export const ranking = getSimpleLinkItem({
 })
 export const bangumi = getSimpleLinkItem({
   name: 'bangumi',
-  displayName: '番剧',
+  displayName: '番剧 (链接)',
+  content: '番剧',
   href: 'https://www.bilibili.com/anime/',
-})
-export const drawing = getSimpleLinkItem({
-  name: 'drawing',
-  displayName: '相簿',
-  href: 'https://h.bilibili.com',
 })
 export const music = getSimpleLinkItem({
   name: 'music',
@@ -40,4 +36,9 @@ export const match = getSimpleLinkItem({
   name: 'match',
   displayName: '赛事',
   href: 'https://www.bilibili.com/v/game/match/',
+})
+export const creations = getSimpleLinkItem({
+  name: 'creations',
+  displayName: '创作中心',
+  href: 'https://member.bilibili.com/platform/home',
 })

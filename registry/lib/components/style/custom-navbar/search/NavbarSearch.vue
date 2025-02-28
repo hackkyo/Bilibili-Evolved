@@ -14,38 +14,41 @@ export default Vue.extend({
 </script>
 <style lang="scss">
 .custom-navbar {
-  &.fill:not(.transparent) {
-    .custom-navbar-item[data-name='search'] .main-content {
-      background-color: #0001;
-    }
-    .launch-bar {
-      opacity: 0.8;
-      &:hover,
-      &:focus-within {
-        opacity: 1;
-      }
-    }
-  }
-  &:not(.transparent) {
-    .custom-navbar-item[data-name='search'] .main-content {
-      background-color: #8881;
-    }
-  }
+  // transparent mode / no fill
   .launch-bar {
     --color: var(--custom-navbar-foreground);
+    background-color: #000a;
     opacity: 0.5;
     transition: opacity 0.2s ease-out;
+    padding: 2px 6px;
+    border-radius: 8px;
+
     &:hover,
     &:focus-within {
       opacity: 1;
     }
     .input-area .launch-bar-form .input {
       padding: 8px 6px;
+      width: var(--navbar-search-width);
+    }
+  }
+
+  // normal mode
+  &:not(.transparent) {
+    .launch-bar {
+      background-color: #8883;
+    }
+  }
+
+  // fill mode
+  &.fill:not(.transparent) {
+    .launch-bar {
+      background-color: #0002;
     }
   }
 }
 .custom-navbar-search {
-  align-self: stretch;
+  align-self: center;
   display: flex;
 }
 </style>

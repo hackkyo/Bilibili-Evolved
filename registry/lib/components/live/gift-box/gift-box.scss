@@ -1,51 +1,76 @@
-.player-full-win {
-  .gift-control-section {
-    display: block !important;
-    left: unset;
-    bottom: unset;
-    top: 100vh;
-    right: 302px;
+// 通过重复增加优先级
+.full-win-gift-btn-wrapper.full-win-gift-btn-wrapper {
+  position: relative;
+
+  // 弹出窗口部分
+  .wrap {
+    right: -28px;
+    bottom: calc(100% + 3px);
+    color: #666;
+    font-size: 12px;
+    line-height: 1.4;
+
+    .text {
+      margin: auto;
+      padding: auto;
+      color: inherit;
+      cursor: inherit;
+      line-height: inherit;
+    }
+
+    .popup::before,
+    .popup::after {
+      left: auto;
+      right: calc(1em + 33px);
+      transform: translateX(50%);
+    }
   }
 
-  .z-gift-package .wrap {
-    right: 0;
-    bottom: 74px;
-  }
+  // 按钮部分
+  .gift-package {
+    margin: auto;
+    width: auto;
+    height: 100%;
+    color: inherit;
+    fill: inherit;
+    background: inherit !important;
 
-  &.hide-aside-area {
-    .gift-control-section {
-      right: 0;
+    &-btn {
+      padding-top: 0 !important;
+      color: rgba(255, 255, 255, 0.9) !important;
+      &:hover {
+        background-color: transparent !important;
+        color: #fff !important;
+      }
+    }
+
+    .bg-text {
+      height: auto !important;
+      line-height: normal !important;
+    }
+
+    .bag-icon {
+      display: none;
     }
   }
 }
-.live-web-player-controller {
-  .fullscreen-gift-box {
-    display: none;
+
+.new-silver-wallet {
+  background-color: var(--Ga1_u) !important;
+}
+
+.new-list-box * .num > span {
+  color: var(--text3) !important;
+}
+
+.click-root > .content-box {
+  color: #000 !important;
+  > .text {
+    color: #000 !important;
   }
 }
-@media screen and (min-width: 1038px) {
-  .player-full-win {
-    &:not(.fullscreen-gift-box-unloaded) {
-      .gift-control-panel .z-gift-package .arrow-bottom.popup {
-        &::before,
-        &::after {
-          left: 50% !important;
-        }
-      }
-      .live-web-player-controller .control-area {
-        .fullscreen-gift-box {
-          display: flex;
-          align-self: center;
-          margin: 0 3px;
-          padding: 0 3px;
-          line-height: 36px;
-          cursor: pointer;
-          color: #FDFDFD;
-          &:hover {
-            color: #FFF;
-          }
-        }
-      }
-    }
-  }
+
+.new-list-box * .static-bg-root {
+  --static-bg-color: #ffecf1 !important;
+  --static-bg-border-color: #ff6699 !important;
 }

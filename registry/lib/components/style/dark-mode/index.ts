@@ -1,39 +1,60 @@
-import { ComponentMetadata } from '@/components/types'
+import { defineComponentMetadata } from '@/components/define'
 import { darkExcludes } from './dark-urls'
 
+const name = 'darkMode'
 const changeDelay = 200
+const darkMetaColor = '#111'
 const add = async () => {
-  // const { addStyle, addImportantStyle } = await import('@/core/style')
-  // const { default: darkStyle } = await import('./dark-mode.scss')
-  // const { default: importantStyle } = await import('./dark-mode.important.scss')
   document.body.classList.add('dark')
   localStorage.setItem('pbp_theme_v4', 'b')
-  // addStyle(darkStyle, 'darkMode')
-  // addImportantStyle(importantStyle, 'darkModeImportant')
+
+  const themeColorMeta = dq('meta[name="theme-color"]') as HTMLMetaElement
+  if (!themeColorMeta) {
+    document.head.insertAdjacentHTML(
+      'beforeend',
+      `<meta name="theme-color" content="${darkMetaColor}">`,
+    )
+  } else {
+    themeColorMeta.dataset.light = themeColorMeta.content
+    themeColorMeta.content = darkMetaColor
+  }
+
+  const colorSchemeMeta = dq('meta[name="color-scheme"]') as HTMLMetaElement
+  if (!colorSchemeMeta) {
+    document.head.insertAdjacentHTML('beforeend', `<meta name="color-scheme" content="dark">`)
+  } else {
+    colorSchemeMeta.content = 'dark'
+  }
 }
 const remove = async () => {
-  // const { removeStyle } = await import('@/core/style')
   document.body.classList.remove('dark')
-  // removeStyle('darkMode', 'darkModeImportant')
+
+  const themeColorMeta = dq('meta[name="theme-color"]') as HTMLMetaElement
+  if (themeColorMeta?.dataset.light) {
+    themeColorMeta.content = themeColorMeta.dataset.light
+  } else {
+    themeColorMeta?.remove()
+  }
+
+  const colorSchemeMeta = dq('meta[name="color-scheme"]') as HTMLMetaElement
+  if (colorSchemeMeta) {
+    colorSchemeMeta.content = 'light'
+  }
+}
+const entry = async () => {
+  setTimeout(add, changeDelay)
 }
 
-export const component: ComponentMetadata = {
-  name: 'darkMode',
+export const component = defineComponentMetadata({
+  name,
   displayName: '夜间模式',
-  entry: () => {
-    setTimeout(add, changeDelay)
-  },
-  reload: () => {
-    setTimeout(add, changeDelay)
-  },
+  entry,
+  reload: entry,
   unload: () => {
     setTimeout(remove, changeDelay)
   },
   description: '启用夜间模式能更好地适应光线暗的环境, 并会大量应用主题颜色.',
-  tags: [
-    componentsTags.style,
-    componentsTags.general,
-  ],
+  tags: [componentsTags.style, componentsTags.general],
   instantStyles: [
     {
       name: 'dark-mode',
@@ -45,6 +66,11 @@ export const component: ComponentMetadata = {
       style: () => import('./dark-mode.important.scss'),
       important: true,
     },
+    {
+      name: 'dark-shadow-dom',
+      style: () => import('./dark-shadow-dom.scss'),
+      shadowDom: true,
+    },
   ],
   plugin: {
     displayName: '夜间模式 - 提前注入',
@@ -55,12 +81,12 @@ export const component: ComponentMetadata = {
       const { contentLoaded } = await import('@/core/life-cycle')
       const { isComponentEnabled } = await import('@/core/settings')
       contentLoaded(() => {
-        // 提前添加dark的class, 防止颜色抖动
-        if (isComponentEnabled('darkMode')) {
+        // 提前添加 dark 的 class, 防止颜色抖动
+        if (isComponentEnabled(name)) {
           document.body.classList.add('dark')
         }
       })
     },
   },
   urlExclude: darkExcludes,
-}
+})

@@ -1,33 +1,44 @@
 @mixin shadow {
   box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.05);
   // box-shadow: #0002 0 1px 10px 1px;
+  body.dark & {
+    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.2);
+  }
 }
 @mixin h-center($gap: 0) {
   display: flex;
   align-items: center;
-  gap: $gap;
+  @if ($gap != 0) {
+    gap: $gap;
+  }
 }
 @mixin v-center($gap: 0) {
   display: flex;
   align-items: center;
   flex-direction: column;
-  gap: $gap;
+  @if ($gap != 0) {
+    gap: $gap;
+  }
 }
 @mixin h-stretch($gap: 0) {
   display: flex;
   align-items: stretch;
-  gap: $gap;
+  @if ($gap != 0) {
+    gap: $gap;
+  }
 }
 @mixin v-stretch($gap: 0) {
   display: flex;
   align-items: stretch;
   flex-direction: column;
-  gap: $gap;
+  @if ($gap != 0) {
+    gap: $gap;
+  }
 }
 @mixin round-bar($height) {
   box-sizing: border-box;
   height: #{$height}px;
-  border-radius: #{$height / 2}px;
+  border-radius: #{$height * 0.5}px;
 }
 @mixin no-scrollbar {
   overflow: auto;
@@ -69,14 +80,12 @@
   background-color: #fff;
   color: black;
   border-radius: $radius;
-  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.05);
   border: 1px solid #8882;
   box-sizing: border-box;
-  // box-shadow: rgba(0, 0, 0, 0.12) 0 4px 8px 0px;
+  @include shadow();
   body.dark & {
     background-color: #282828;
     color: #eee;
-    box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.2);
   }
 }
 @mixin popup($radius: 8px) {
@@ -119,11 +128,24 @@
     stroke: #eee;
   }
 }
-@mixin default-background-color {
+@mixin semi-bold {
+  font-weight: 600;
+}
+@mixin default-background-color($dark-color: #333) {
   background-color: #fff;
   body.dark & {
-    background-color: #333;
+    background-color: $dark-color;
   }
+}
+@mixin absolute-h-center($position: absolute) {
+  position: $position;
+  left: 50%;
+  transform: translateX(-50%);
+}
+@mixin absolute-v-center($position: absolute) {
+  position: $position;
+  top: 50%;
+  transform: translateY(-50%);
 }
 @mixin absolute-center($position: absolute) {
   position: $position;
@@ -131,9 +153,10 @@
   left: 50%;
   transform: translateX(-50%) translateY(-50%);
 }
-@mixin on-fullscreen($bodyClass: "*") {
-  #{selector-unify("body.player-mode-webfullscreen", $bodyClass)} &,
+@mixin on-fullscreen($bodyClass: '*') {
+  #{selector-unify("body.player-mode-full", $bodyClass)} &,
   #{selector-unify("body.player-fullscreen-fix", $bodyClass)} &,
+  #{selector-unify("body.player-mode-web", $bodyClass)} &,
   #{selector-unify("body.player-full-win", $bodyClass)} & {
     @content;
   }

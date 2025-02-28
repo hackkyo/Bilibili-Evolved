@@ -1,9 +1,9 @@
-.bilibili-player-video-danmaku {
-  .b-danmaku {
-    &.airborne {
-      text-decoration: underline;
-      cursor: pointer;
-      pointer-events: initial;
-    }
+.bili-dm,
+.b-danmaku,
+.bili-danmaku-x-dm {
+  &.airborne {
+    text-decoration: underline;
+    cursor: pointer;
+    pointer-events: initial;
   }
 }

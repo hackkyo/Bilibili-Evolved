@@ -7,6 +7,7 @@ module.exports = {
     'plugin:vue/recommended',
     'plugin:@typescript-eslint/recommended',
     'airbnb-base',
+    'plugin:prettier/recommended',
   ],
   globals: {
     Atomics: 'readonly',
@@ -18,11 +19,10 @@ module.exports = {
     parser: '@typescript-eslint/parser',
     sourceType: 'module',
   },
-  plugins: [
-    'vue',
-    '@typescript-eslint',
-  ],
+  plugins: ['vue', '@typescript-eslint', 'prettier'],
   rules: {
+    'prettier/prettier': 'error',
+
     'import/no-unresolved': 'off',
     'import/extensions': 'off',
     'import/no-extraneous-dependencies': 'off',
@@ -38,18 +38,21 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-use-before-define': ['error'],
     '@typescript-eslint/no-redeclare': 'error',
-    '@typescript-eslint/naming-convention': ['error',
+    '@typescript-eslint/naming-convention': [
+      'error',
       {
         selector: 'enumMember',
         format: ['PascalCase'],
       },
     ],
 
+    'vue/multi-word-component-names': 'off',
     'vue/max-attributes-per-line': 'off',
     'vue/html-self-closing': 'off',
     'vue/no-v-html': 'off',
     'vue/require-prop-types': 'off',
     'vue/one-component-per-file': 'off',
+    'vue/singleline-html-element-content-newline': 'off',
 
     // 使用 @typescript-eslint/no-unused-vars, 否则 interface 都是 unused
     'no-unused-vars': 'off',
@@ -64,7 +67,7 @@ module.exports = {
     'no-await-in-loop': 'off',
     'no-restricted-syntax': 'off',
     'no-useless-escape': 'off',
-    'no-empty-function': ['error', { 'allow': ['constructors'] }],
+    'no-empty-function': ['error', { allow: ['constructors'] }],
     'no-return-assign': ['error', 'except-parens'],
     'no-redeclare': 'off',
     'no-script-url': 'off',
@@ -73,34 +76,36 @@ module.exports = {
     'no-alert': 'off',
     'no-restricted-globals': 'off',
 
-    'arrow-parens': ['error', 'as-needed'],
-    'semi': ['error', 'never'],
+    'arrow-body-style': 'off',
+    'prefer-arrow-callback': 'off',
+    'object-curly-newline': 'off',
     'linebreak-style': 'off',
-    'camelcase': 'off',
+    camelcase: 'off',
     'lines-between-class-members': 'off',
-    'radix': ['error', 'as-needed'],
-    'max-len': 'warn',
+    radix: ['error', 'as-needed'],
     'max-classes-per-file': 'off',
-    'prefer-destructuring': ['error',
+    'class-methods-use-this': 'off',
+    'prefer-destructuring': [
+      'error',
       {
-        'VariableDeclarator': {
-          'array': false,
-          'object': true
+        VariableDeclarator: {
+          array: false,
+          object: true,
         },
-        'AssignmentExpression': {
-          'array': false,
-          'object': false
-        }
+        AssignmentExpression: {
+          array: false,
+          object: false,
+        },
       },
     ],
-    'curly': ['error', 'all'],
+    curly: ['error', 'all'],
   },
   overrides: [
     {
-      files: ['*.vue', 'shims.d.ts'],
+      files: ['*.vue', 'shims.d.ts', 'webpack/**/*.ts', 'registry/webpack/**/*.ts'],
       rules: {
         'import/no-default-export': 'off',
-      }
-    }
-  ]
+      },
+    },
+  ],
 }

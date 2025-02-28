@@ -1,3 +1,5 @@
+@import 'common';
+
 @mixin subtitle {
   &.bilibili-player-area .subtitle-position.subtitle-position {
     &-bc,
@@ -10,16 +12,32 @@
     &-bc,
     &-bl,
     &-br {
-      bottom: 54px !important;
+      bottom: 68px !important;
     }
   }
-  .mode-webfullscreen &.touch-video-control-show,
-  .mode-fullscreen &.touch-video-control-show {
-    .subtitle-position.subtitle-position {
-      &-bc,
-      &-bl,
-      &-br {
-        bottom: 68px !important;
+  .bpx-player-subtitle-panel-position {
+    &[data-position='bottom'] {
+      bottom: 14px !important;
+    }
+  }
+  &.touch-video-control-show .bpx-player-subtitle-panel-position {
+    &[data-position='bottom'] {
+      bottom: 69px !important;
+    }
+  }
+  @include on-fullscreen {
+    &.touch-video-control-show {
+      .subtitle-position.subtitle-position {
+        &-bc,
+        &-bl,
+        &-br {
+          bottom: 88px !important;
+        }
+      }
+      .bpx-player-subtitle-panel-position {
+        &[data-position='bottom'] {
+          bottom: 88px !important;
+        }
       }
     }
   }

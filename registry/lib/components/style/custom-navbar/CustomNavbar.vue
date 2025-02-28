@@ -9,7 +9,7 @@
 </template>
 
 <script lang="ts">
-import { getUID } from '@/core/utils'
+import { addComponentListener } from '@/core/settings'
 import { ascendingSort } from '@/core/utils/sort'
 import { registerAndGetData } from '@/plugins/data'
 import { getBuiltInItems } from './built-in-items'
@@ -27,14 +27,7 @@ const [renderedItems] = registerAndGetData(CustomNavbarRenderedItems, {
   items: [] as CustomNavbarItem[],
 })
 const getItems = () => {
-  const isLogin = Boolean(getUID())
   const items = (initItems as CustomNavbarItemInit[])
-    .filter(it => {
-      if (it.loginRequired && !isLogin) {
-        return false
-      }
-      return true
-    })
     .map(it => new CustomNavbarItem(it))
     .sort(ascendingSort(it => it.order))
   renderedItems.items = items
@@ -49,6 +42,7 @@ export default Vue.extend({
       initItems,
       items: getItems(),
       styles: [],
+      height: CustomNavbarItem.navbarOptions.height,
     }
   },
   watch: {
@@ -57,6 +51,13 @@ export default Vue.extend({
     },
   },
   async mounted() {
+    addComponentListener(
+      'customNavbar.height',
+      (value: number) => {
+        document.documentElement.style.setProperty('--navbar-height', `${value}px`)
+      },
+      true,
+    )
     await checkTransparentFill(this)
   },
   methods: {
@@ -72,11 +73,14 @@ export default Vue.extend({
 </script>
 
 <style lang="scss">
-@import "common";
+@import 'common';
 
-$navbar-height: 50px;
+.van-message-box {
+  z-index: 10002 !important;
+}
+
 html {
-  --navbar-height: #{$navbar-height};
+  --navbar-height: 50px;
   --navbar-foreground: #555;
   --navbar-background: white;
   --navbar-bounds-padding: 10%;
@@ -100,14 +104,18 @@ body.dark.custom-navbar-loading::after {
 body.fixed-navbar {
   .left-panel {
     .adaptive-scroll .scroll-content {
-      top: $navbar-height !important;
+      top: var(--navbar-height) !important;
     }
   }
   &.enable-feeds-filter .left-panel,
   .right-panel {
     .adaptive-scroll .scroll-content {
-      top: #{$navbar-height + 8px} !important;
+      top: calc(var(--navbar-height) + 8px) !important;
     }
+  }
+  .bili-feed4 .header-channel,
+  .search-fixed-header {
+    display: none !important;
   }
 }
 
@@ -116,10 +124,6 @@ body.fixed-navbar {
   transition: all 0.2s ease-out;
   -webkit-tap-highlight-color: transparent;
   outline: none !important;
-  margin-inline-start: 0;
-  margin-inline-end: 0;
-  padding-inline-start: 0;
-  padding-inline-end: 0;
 }
 
 .custom-navbar {
@@ -147,23 +151,29 @@ body.fixed-navbar {
   // &:not(.fill) .custom-navbar-iconfont {
   //   color: var(--theme-color);
   // }
-  path {
-    fill: var(--navbar-foreground);
-  }
-  svg.stroke {
-    &,
+  svg.inherit-color {
     path {
-      fill: transparent;
-      stroke: var(--navbar-foreground);
+      fill: var(--navbar-foreground);
     }
-  }
-  &.fill:not(.transparent) path {
-    fill: var(--foreground-color-d);
-    svg.stroke {
+    &.stroke {
       &,
       path {
         fill: transparent;
-        stroke: var(--navbar-foreground-d);
+        stroke: var(--navbar-foreground);
+      }
+    }
+  }
+  &.fill:not(.transparent) {
+    svg.inherit-color {
+      path {
+        fill: var(--foreground-color-d);
+      }
+      &.stroke {
+        &,
+        path {
+          fill: transparent;
+          stroke: var(--navbar-foreground-d);
+        }
       }
     }
   }
@@ -197,12 +207,7 @@ body.fixed-navbar {
       left: 0;
       width: 100%;
       height: calc(2 * var(--navbar-height));
-      background-image: linear-gradient(
-        to bottom,
-        #000a 0,
-        #0004 65%,
-        transparent 100%
-      );
+      background-image: linear-gradient(to bottom, #000a 0, #0004 65%, transparent 100%);
       pointer-events: none;
     }
   }
@@ -238,15 +243,23 @@ body.fixed-navbar {
   .padding,
   .custom-navbar-items > * {
     &.peek::after {
-      content: "";
+      content: '';
       position: absolute;
       top: 0;
-      left: 0;
       width: 100%;
       height: 100%;
       box-sizing: border-box;
       border: 2px dashed;
     }
+    &.left-pad::after {
+      left: 0;
+    }
+    &.right-pad::after {
+      right: 0;
+    }
+  }
+  ~ .bili-gallery {
+    z-index: 10002;
   }
 }
 </style>
